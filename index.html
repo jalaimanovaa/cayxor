@@ -471,7 +471,7 @@ const WD_MON = ['Bazar ertəsi','Çərşənbə axşamı','Çərşənbə','Cümə
 function shiftDay(ds, n){ const [y, m, d] = ds.split('-').map(Number); return dayStr(new Date(y, m - 1, d + n)); }
 function dayLabel(ds){ const [y, m, d] = ds.split('-').map(Number); const dt = new Date(y, m - 1, d);
   const base = d + ' ' + MONTHS[m - 1];
-  if (ds === dayStr()) return 'Bu gün, ' + base; if (ds === shiftDay(dayStr(), -1)) return 'Dünən, ' + base;
+  if (ds === dayStr()) return 'Bu gün, ' + base; if (ds === shiftDay(dayStr(), -1)) return 'Dünən, ' + base; if (ds === shiftDay(dayStr(), -2)) return 'Sırağagün, ' + base;
   return base + ', ' + WDAYS[dt.getDay()]; }
 const hm = ts => { const d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
 function mins(ts){ const d = Math.max(0, Math.floor((Date.now() - ts) / 60000));
@@ -643,6 +643,7 @@ function period(p){
   const t = new Date(); let to = dayStr(t), f;
   if (p.k === 'today') f = to;
   else if (p.k === 'yest') { f = to = shiftDay(to, -1); }
+  else if (p.k === 'yest2') { f = to = shiftDay(to, -2); }
   else if (p.k === 'week') { const d = new Date(t); d.setDate(d.getDate() - (d.getDay() + 6) % 7); f = dayStr(d); }
   else if (p.k === 'month') f = to.slice(0, 8) + '01';
   else { f = p.from || to; to = p.to || to; if (f > to) [f, to] = [to, f]; }
@@ -650,7 +651,7 @@ function period(p){
 }
 const perLabel = r => r.from === r.to ? dayLabel(r.from) : dayLabel(r.from) + ' – ' + dayLabel(r.to);
 function perChips(key){ const p = S[key + 'P'];
-  return `<div class="chips">` + [['today','Bu gün'],['yest','Dünən'],['week','Bu həftə'],['month','Bu ay'],['custom','Tarix seç']]
+  return `<div class="chips">` + [['today','Bu gün'],['yest','Dünən'],['yest2','Sırağagün'],['week','Bu həftə'],['month','Bu ay'],['custom','Tarix seç']]
     .map(([k, l]) => `<button class="chip ${p.k === k ? 'on' : ''}" data-act="per" data-key="${key}" data-k="${k}">${l}</button>`).join('') + '</div>' +
     (p.k === 'custom' ? (r => `<div class="daterow"><input type="date" data-chg="perd" data-key="${key}" data-f="from" value="${r.from}" aria-label="Başlanğıc"><span>—</span><input type="date" data-chg="perd" data-key="${key}" data-f="to" value="${r.to}" aria-label="Son"></div>`)(period(p)) : ''); }
 async function loadDays(from, to){
@@ -829,6 +830,7 @@ function vTab(){
   let right = `<div class="card order"><h2>Sifariş <small>${tab.openedAt ? 'açılıb ' + hm(tab.openedAt) + ', ' + mins(tab.openedAt) : ''}</small></h2>`;
   if (tab.by) right += `<small>Açan: ${esc(tab.by)}</small>`;
   if (tab.note) right += `<div class="note">${esc(tab.note)}</div>`;
+  if (tab.backDay) right += `<div class="note">Düzəliş: bağlananda <b>${dayLabel(tab.backDay)}</b> gününə yazılacaq.</div>`;
   if (!tab.items.length) right += '<p class="muted">Masa boşdur. Məhsullara vurun, sifarişə düşəcək.</p>';
   right += tab.items.map((l, i) => `<div class="line"><div class="ln">${esc(l.name)}</div><div class="lt">${money(l.price * l.qty)}</div>
     <div class="qty"><button data-act="qty" data-i="${i}" data-d="-1" aria-label="Azalt">−</button><span>${l.qty}</span><button data-act="qty" data-i="${i}" data-d="1" aria-label="Artır">+</button></div>
@@ -887,7 +889,7 @@ function vLed(){
 
 /* ---------- buys & expenses ---------- */
 const UNITS = ['ədəd','kq','qr','litr','qutu','paçka','blok'];
-const EXP = [['İşıq','Kommunal'],['Qaz','Kommunal'],['Su','Kommunal'],['İnternet','Kommunal'],['Kirayə','Kirayə'],['Təmir','Təmir'],['Vergi','Vergi'],['Nəqliyyat','Digər'],['Digər','Digər']];
+const EXP = [['Qəlyan','Qəlyan'],['İşıq','Kommunal'],['Qaz','Kommunal'],['Su','Kommunal'],['İnternet','Kommunal'],['Kirayə','Kirayə'],['Təmir','Təmir'],['Vergi','Vergi'],['Nəqliyyat','Digər'],['Digər','Digər']];
 function lastPrice(ref){ const x = stockById(ref) || prodById(ref); return x ? (x.lastPrice || 0) : 0; }
 /* bazarlıq: bir neçə mal birlikdə seçilir. S.bSels = [{ ref, qty, sum, auto }] */
 const bSels = () => S.bSels || (S.bSels = []);
@@ -1032,6 +1034,8 @@ function vStaff(){
   h += '<div class="card" style="margin-top:12px;padding:4px 16px">' + (S.staff.length ? S.staff.map(u => { const a = att[u.id];
     const hw = u.halfWage > 0, st = a && a.in ? (hw ? (a.half ? 'Yarım smen ✓' : 'Tam gün ✓') : 'Gəldi ✓') + (a.out ? ', getdi' : '') : 'Gəlməyib';
     const paid = sum(pays.filter(p => p.staff === u.id), p => p.amount);
+    if (u.role === 'admin') return `<div class="srow"><div class="top"><div><b>${esc(u.name)}</b> <span class="tag">Sahib</span></div>
+      <button class="editic" data-act="staffForm" data-id="${u.id}" aria-label="Düzəliş et" style="background:none">✎</button></div></div>`;
     return `<div class="srow"><div class="top"><div><b>${esc(u.name)}</b> <span class="tag">${u.role === 'admin' ? 'Sahib' : 'İşçi'}</span><div><small class="${a && a.in ? 'up' : ''}">${st}${paid ? ', bu gün verilib ' + money(paid) : ''}</small></div></div>
       <button class="editic" data-act="staffForm" data-id="${u.id}" aria-label="Düzəliş et" style="background:none">✎</button></div>
       <div class="row">${!(a && a.in) ? (hw ? `<button class="btn sm" data-act="att" data-id="${u.id}" data-t="in">Tam gün</button><button class="btn sm" data-act="att" data-id="${u.id}" data-t="half">Yarım smen</button>` : `<button class="btn sm" data-act="att" data-id="${u.id}" data-t="in">Gəldi</button>`)
@@ -1042,7 +1046,7 @@ function vStaff(){
     pays.sort((a, b) => b.at - a.at).map(p => `<div class="li"><div class="grow"><div>${esc(p.name)} <span class="tag">${esc(p.kind)}</span></div><small>${hm(p.at)}${p.note ? ', ' + esc(p.note) : ''}${p.by ? ', verən ' + esc(p.by) : ''}</small></div>
       <div class="amt">${money(p.amount)}</div><button class="x" data-act="delPay" data-id="${p.id}" aria-label="Sil">×</button></div>`).join('') + '</div>';
   const M = S.stMonth; if (M) { const [y, m] = d.split('-').map(Number);
-    const rows = S.staff.map(u => { const A = M.days.map(x => x.att && x.att[u.id]).filter(a => a && a.in), hw = u.halfWage > 0, halfN = hw ? A.filter(a => a.half).length : 0, fullN = A.length - halfN, days = A.length;
+    const rows = S.staff.filter(u => u.role !== 'admin').map(u => { const A = M.days.map(x => x.att && x.att[u.id]).filter(a => a && a.in), hw = u.halfWage > 0, halfN = hw ? A.filter(a => a.half).length : 0, fullN = A.length - halfN, days = A.length;
       const paid = sum(M.pays.filter(p => p.staff === u.id), p => p.amount), earned = (u.wage || 0) * fullN + (u.halfWage || 0) * halfN;
       return `<tr><td>${esc(u.name)}</td><td class="r">${hw && halfN ? fullN + ' + ' + halfN + 'y' : days}</td><td class="r">${u.wage ? money(earned) : '—'}</td><td class="r">${money(paid)}</td><td class="r ${u.wage && earned - paid > 0 ? 'debt' : ''}">${u.wage ? money(earned - paid) : '—'}</td></tr>`; }).join('');
     h += `<div class="sec">${MONTHS[m - 1]} ayı üzrə</div><div class="card scroll"><table><thead><tr><th>İşçi</th><th class="r">Gün</th><th class="r">Hesablanan</th><th class="r">Verilib</th><th class="r">Qalıq</th></tr></thead><tbody>${rows}</tbody></table>
@@ -1142,10 +1146,10 @@ function vRep(){
   else if (!sf.length) h += '<p class="muted">Axtarışa uyğun çek tapılmadı.</p>';
   else h += '<div class="card" style="padding:4px 16px;margin-bottom:20px">' + sf.slice().sort((a, c) => c.closedAt - a.closedAt).map(x => `<div class="chk">
     <button class="rowbtn li" data-act="chk" data-id="${x.id}"><div class="grow"><div>${esc(x.table)} <span class="tag ${x.pay === 'nisyə' ? 'low' : ''}">${x.pay === 'qarışıq' ? 'nağd ' + money(x.cash) + ' + kart ' + money(x.card) : esc(x.pay)}</span></div>
-    <small>${x.label ? esc(x.label) + ', ' : ''}${r.from !== r.to ? dayLabel(x.day) + ', ' : ''}${hm(x.closedAt)}${x.by ? ', ' + esc(x.by) : ''}${x.custName ? ', ' + esc(x.custName) : ''}${x.discount ? ', endirim ' + money(x.discount) : ''}${x.tip ? ', bəxşiş ' + money(x.tip) : ''}</small></div><div class="amt">${money(x.total)}</div></button>
+    <small>${x.label ? esc(x.label) + ', ' : ''}${r.from !== r.to ? dayLabel(x.day) + ', ' : ''}${hm(x.closedAt)}${x.by ? ', ' + esc(x.by) : ''}${x.custName ? ', ' + esc(x.custName) : ''}${x.discount ? ', endirim ' + money(x.discount) : ''}${x.tip ? ', bəxşiş ' + money(x.tip) : ''}${x.backdated ? ', sonradan yazılıb' : ''}</small></div><div class="amt">${money(x.total)}</div></button>
     ${S.openChk === x.id ? `<div class="det">${(x.items || []).map(l => `${esc(l.name)} × ${l.qty} = ${money(l.price * l.qty)}`).join('<br>')}
       ${x.note ? '<br>Qeyd: ' + esc(x.note) : ''}<br>Açılıb ${hm(x.openedAt)}${x.openedBy ? ' (' + esc(x.openedBy) + ')' : ''}, bağlanıb ${hm(x.closedAt)}
-      <div style="margin-top:8px"><button class="btn warn sm" data-act="delSale" data-id="${x.id}">Çeki sil</button></div></div>` : ''}</div>`).join('') + '</div>';
+      <div class="row" style="margin-top:8px"><button class="btn sm" data-act="reopenSale" data-id="${x.id}">Çeki düzəlt</button><button class="btn warn sm" data-act="delSale" data-id="${x.id}">Çeki sil</button></div></div>` : ''}</div>`).join('') + '</div>';
   return h;
 }
 function eodText(RP = S.rep, label){ const o = repCalc(RP), r = RP.r, L = [];
@@ -1202,6 +1206,7 @@ const HELP = [
   <li><b>••• düyməsi:</b> masaya qeyd yazmaq (məsələn "4 nəfər") və səhv açılmış masanı ödənişsiz boşaltmaq üçündür. Boşaltma da jurnala düşür.</li></ul>`],
  ['Hesabı bağlamaq və ödəniş', `<ul><li>"Hesabı bağla" basın. Endirim vermək istəyirsinizsə, məbləğ (₼) və ya faiz (%) yazın. Endirim də jurnala düşür.</li>
   <li><b>Nağd</b> və ya <b>Kart</b>: bir basışla hesab bağlanır.</li>
+  <li><b>Keçmiş günə yazmaq:</b> hesabı bağlayanda "Hansı günə yazılsın" hissəsində Dünən, Sırağagün seçin və ya tarix seçin. Belə çeklər hesabatda "sonradan yazılıb" kimi görünür və jurnala düşür.</li>
   <li><b>Müştəri fərqli məbləğ ödəyəndə</b> (məsələn hesab 10.50, verdi 11): "Müştəri ödədi" xanasına yazın və ya hazır düyməyə (11 ₼, 15 ₼) basın. Artıq pul bəxşiş kimi, əskik pul endirim kimi yazılır. Bəxşiş hesabatda ayrıca görünür və kassa hesabına daxildir.</li>
   <li><b>Nağd + kart:</b> müştəri bir hissəni nağd, qalanını kartla ödəyəndə. Nağd hissəni yazın və ya "Yarısı" düyməsinə basın, kart hissəsi özü hesablanır. Sonra "Təsdiqlə" basın.</li>
   <li><b>Nisyə:</b> müştərinin adını yazıb "Nisyəyə yaz" basın. Aşağıda köhnə müştərilər görünür, birinə bassanız, nisyə onun adına yazılır. Yazdığınız ad köhnə müştərinin adı ilə eynidirsə, yeni müştəri yaradılmır, köhnəsinə yazılır.</li>
@@ -1247,7 +1252,7 @@ const HELP = [
   <li><b>Qələbəlik saatları və həftənin günləri:</b> ən çox satış olan vaxtlar. İşçi növbəsini buna görə qurun.</li>
   <li><b>Gün sonu:</b> "Daha çox → Gün sonu" və ya Hesabatda "Gün sonu mətni" basın. "WhatsApp-a göndər" düyməsi WhatsApp-ı hazır mesajla açır, siz yalnız göndər basırsınız. Parametrlərdə nömrə yazsanız, mesaj həmişə o nömrəyə hazırlanır.</li>
   <li><b>Excel üçün yüklə:</b> çeklər CSV faylı kimi yüklənir, Excel-də açılır.</li>
-  <li>Çekə basanda içi açılır. Səhv bağlanmış çeki "Çeki sil" ilə silmək olar, bu da jurnala düşür.</li>
+  <li>Çekə basanda içi açılır. <b>"Çeki düzəlt"</b> çeki masaya qaytarır: məhsul əlavə edin və ya çıxarın, yenidən bağlayın, çek öz tarixində qalır. Səhv bağlanmış çeki "Çeki sil" ilə tam silmək olar. Hər ikisi jurnala düşür.</li>
   <li><b>Çek axtarışı:</b> "Bağlanmış çeklər" altındakı xanaya masanın adını, müvəqqəti adı (məsələn Vip 4), nisyə müştərisini, məhsul adını və ya məbləği yazın. Uyğun çeklər və onların cəmi görünür.</li></ul>`],
  ['Ləğv jurnalı', `<p>Daha çox → Ləğv jurnalı. Pulun itməməsi üçün silinən hər şey burada qalır.</p><ul>
   <li>Bunlar yazılır: sifarişdən çıxarılan məhsul, ödənişsiz boşaldılan masa, verilən endirim, silinən çek, silinən bazarlıq, nisyə və işçi ödənişi.</li>
@@ -1387,6 +1392,10 @@ function payModal(){ const tab = S.tabs[S.open]; const { sub: sb, disc, total } 
     <div class="muted" style="margin-top:6px">${tab.items.map(l => esc(l.name) + ' × ' + l.qty).join(', ')}</div>
     <label for="pDisc">Endirim</label><div class="row" style="flex-wrap:nowrap"><input id="pDisc" inputmode="decimal" placeholder="0" value="${esc(PAY.v)}" data-inp="disc">
       <div class="seg" style="flex:none;width:110px">${['₼','%'].map(m => `<button class="${PAY.mode === m ? 'on' : ''}" data-act="discMode" data-m="${m}">${m}</button>`).join('')}</div></div>
+    ${!PAY.day && !PAY.showDay ? '<button class="btn ghost sm" style="margin-top:12px" data-act="payShowDay">📅 Başqa günə yaz</button>' : (() => { const dd = PAY.day || dayStr(), q = [['0','Bu gün'],['-1','Dünən'],['-2','Sırağagün']];
+      return `<label>Hansı günə yazılsın</label><div class="chips" style="flex-wrap:wrap">${q.map(([d, l]) => `<button class="chip ${(d === '0' ? !PAY.day || PAY.day === dayStr() : PAY.day === shiftDay(dayStr(), +d)) ? 'on' : ''}" data-act="payDay" data-d="${d}">${l}</button>`).join('')}
+        <input type="date" data-chg="payDate" value="${dd}" max="${dayStr()}" style="width:auto;min-height:42px" aria-label="Tarix seç"></div>
+        ${PAY.day && PAY.day !== dayStr() ? `<p class="note" style="margin-top:8px">Bu hesab <b>${dayLabel(PAY.day)}</b> gününə yazılacaq.</p>` : ''}`; })()}
     <div style="margin-top:16px"><small id="pSubL">${disc ? 'Məbləğ ' + money(sb) + ', endirim ' + money(disc) : 'Ödəniləcək'}</small><div class="bigsum" id="pTot">${money(total)}</div></div>
     ${PAY.split ? '' : `<label for="pPaid">Müştəri ödədi (fərqlidirsə)</label>
       <div class="chips" style="flex-wrap:wrap">${rnd.map(v => `<button class="chip" data-act="paidQuick" data-v="${v}">${v} ₼</button>`).join('')}</div>
@@ -1554,7 +1563,9 @@ const ACT = {
     const ok = await tabEvent(toId, from.items.map(l => ({ pid: l.pid, name: l.name, price: l.price, d: l.qty })), extra);
     if (ok) await Store.del('tabs/' + from.tableId);
     S.open = toId; render(); toast('Köçürüldü: ' + tableById(toId).name); },
-  closeTab: () => { const tab = S.tabs[S.open]; if (!tab?.items?.length) return; if (!$('#modal .sheet')) PAY = { mode: '₼', v: '', split: false, cash: '', paid: '' }; payModal(); },
+  closeTab: () => { const tab = S.tabs[S.open]; if (!tab?.items?.length) return; if (!$('#modal .sheet')) PAY = { mode: '₼', v: '', split: false, cash: '', paid: '', day: tab.backDay || '' }; payModal(); },
+  payShowDay: () => { PAY.v = mv('pDisc'); if ($('#pPaid')) PAY.paid = mv('pPaid'); if (PAY.split) PAY.cash = mv('pCash'); PAY.showDay = true; payModal(); },
+  payDay: el => { PAY.v = mv('pDisc'); if ($('#pPaid')) PAY.paid = mv('pPaid'); if (PAY.split) PAY.cash = mv('pCash'); PAY.day = el.dataset.d === '0' ? '' : shiftDay(dayStr(), +el.dataset.d); payModal(); },
   splitOn: () => { PAY.v = mv('pDisc'); PAY.paid = ''; PAY.split = true; PAY.cash = String(r2(payCalc(S.tabs[S.open]).total / 2)); payModal(); },
   paidQuick: el => { PAY.paid = el.dataset.v; const i = $('#pPaid'); if (i) i.value = PAY.paid; updPaid(); },
   splitOff: () => { PAY.split = false; payModal(); },
@@ -1744,6 +1755,16 @@ const ACT = {
     if (P.k === 'custom') { P.from = P.from || r.from; P.to = P.to || r.to; } reloadKey(key); },
   loadRep: () => { loadRep(); loadCmp(); },
   chk: el => { S.openChk = S.openChk === el.dataset.id ? null : el.dataset.id; render(); },
+  reopenSale: el => { const x = S.rep.checks.find(c => c.id === el.dataset.id); if (!x) return; const tid = x.tableId && tableById(x.tableId) ? x.tableId : null;
+    if (!tid) return toast('Bu çekin masası tapılmadı');
+    if (S.tabs[tid] && S.tabs[tid].items.length) return toast(tableById(tid).name + ' hazırda doludur. Əvvəlcə onu bağlayın.');
+    confirmBox('Çek düzəliş üçün masaya qaytarılsın? Məhsul əlavə edib və ya çıxarıb yenidən bağlayın. Tarixi eyni qalacaq.', 'Masaya qaytar', async () => {
+      if (x.legacy) await Store.del('sales/' + x.id); else await dayMerge(x.day, { checks: { [x.id]: null } });
+      consume(x.items || [], -1); if (x.cust) Store.merge('ledgers/' + x.cust, { e: { [x.id]: null } });
+      const ev = {}; (x.items || []).forEach((l, i) => ev['r' + uid() + i] = { pid: l.pid, name: l.name, price: l.price, d: l.qty, at: x.openedAt || Date.now(), by: S.me.name });
+      await Store.set('tabs/' + tid, { tableId: tid, openedAt: x.openedAt || Date.now(), by: x.openedBy || S.me.name, label: x.label || '', note: x.note || '', ev, backDay: x.day === dayStr() ? '' : x.day });
+      log('diger', x.table + ' çeki düzəliş üçün masaya qaytarıldı', x.total, x.table);
+      S.open = tid; S.view = 'tab'; S.pane = 'order'; S.q = ''; window.scrollTo(0, 0); render(); toast('Çek ' + tableById(tid).name + ' masasına qaytarıldı'); }); },
   delSale: el => { const x = S.rep.checks.find(c => c.id === el.dataset.id);
     confirmBox('Bu çek silinsin? Satış hesabatdan çıxacaq, mallar anbara qaytarılacaq və ləğv jurnalına yazılacaq.', 'Sil', async () => {
       if (x.legacy) await Store.del('sales/' + x.id); else await dayMerge(x.day, { checks: { [x.id]: null } });
@@ -1853,10 +1874,11 @@ const ACT = {
 };
 async function finishPay(kind, cust, btn){
   const tab = clone(S.tabs[S.open]); if (!tab?.items?.length) return;
-  let { sub: sb, disc, total } = payCalc(tab); const t = tableById(S.open), now = Date.now(), id = uid(), d = dayStr();
+  let { sub: sb, disc, total } = payCalc(tab); const t = tableById(S.open), id = uid(), d = PAY.day && PAY.day < dayStr() ? PAY.day : dayStr();
+  const back = d !== dayStr(), enteredAt = Date.now(), now = back ? enteredAt - Math.round((new Date(dayStr()) - new Date(d)) / 86400000) * 86400000 : enteredAt;
   let tip = 0; const pv = PAY.paid === '' || PAY.split || kind === 'nisyə' ? null : r2(num(PAY.paid));
   if (pv !== null && pv > 0 && pv !== total) { if (pv > total) tip = r2(pv - total); else { disc = r2(disc + total - pv); total = pv; } }
-  const sale = { table: t.name, tableId: t.id, zone: t.zone || '', items: tab.items.map(l => ({ pid: l.pid, name: l.name, price: l.price, qty: l.qty })), subtotal: sb, discount: disc, total, tip, label: tab.label || '', pay: kind,
+  const sale = { table: t.name, tableId: t.id, zone: t.zone || '', items: tab.items.map(l => ({ pid: l.pid, name: l.name, price: l.price, qty: l.qty })), subtotal: sb, discount: disc, total, tip, label: tab.label || '', pay: kind, ...(back ? { backdated: true, enteredAt } : {}),
     openedAt: tab.openedAt || now, closedAt: now, note: tab.note || '', by: S.me.name, openedBy: tab.by || '', cust: cust ? cust.id : '', custName: cust ? cust.name : '' };
   if (kind === 'qarışıq') { const cash = r2(num(PAY.cash)); if (cash <= 0 || cash >= total) return toast('Nağd hissə 0-dan çox və ümumi məbləğdən az olmalıdır');
     sale.cash = cash; sale.card = r2(total - cash); }
@@ -1867,6 +1889,7 @@ async function finishPay(kind, cust, btn){
   tab.items.forEach(l => { if (l.pid) S.pop[l.pid] = (S.pop[l.pid] || 0) + l.qty; });
   if (disc > 0) log('endirim', t.name + ' hesabına endirim', disc, t.name);
   if (tip > 0) toast('Bəxşiş: ' + money(tip));
+  if (back) log('diger', t.name + ': ' + dayLabel(d) + ' gününə sonradan yazıldı', total, t.name);
   if (cust) Store.merge('ledgers/' + cust.id, { e: { [id]: { type: 'borc', amount: total, note: t.name + ' hesabı', at: now, by: S.me.name } } });
   closeModal(); S.view = 'tables'; S.open = null; S.q = ''; render(); toast(t.name + ' bağlandı: ' + money(total) + ' ' + (kind === 'qarışıq' ? '(nağd ' + money(sale.cash) + ', kart ' + money(sale.card) + ')' : kind) + (cust ? ' (' + cust.name + ')' : ''));
 }
@@ -1894,6 +1917,7 @@ document.addEventListener('input', e => { const el = e.target, k = el.dataset.in
   if (S.draft) { if (el.dataset.d) S.draft[el.dataset.d] = el.value;
     if (el.dataset.rq != null) { const r = S.draft.recipe[+el.dataset.rq], x = stockById(r.ref); r.qty = Math.round(fromD(x ? x.unit : '', num(el.value)) * 1e6) / 1e6; } } });
 document.addEventListener('change', e => { const el = e.target;
+  if (el.dataset.chg === 'payDate') { PAY.v = mv('pDisc'); if ($('#pPaid')) PAY.paid = mv('pPaid'); if (PAY.split) PAY.cash = mv('pCash'); PAY.day = el.value && el.value < dayStr() ? el.value : ''; payModal(); return; }
   if (el.id === 'ciMenu') { const w = $('#ciCatW'); if (w) w.style.display = el.checked ? '' : 'none'; return; }
   if (el.id === 'restoreFile') { if (el.files && el.files[0]) doRestore(el.files[0]); return; }
   if (S.draft && el.dataset.dc) { S.draft[el.dataset.dc] = el.checked; return; }
