@@ -1145,8 +1145,8 @@ function vRep(){
   if (!s.length) h += '<p class="muted">Bu dövrdə bağlanmış çek yoxdur.</p>';
   else if (!sf.length) h += '<p class="muted">Axtarışa uyğun çek tapılmadı.</p>';
   else h += '<div class="card" style="padding:4px 16px;margin-bottom:20px">' + sf.slice().sort((a, c) => c.closedAt - a.closedAt).map(x => `<div class="chk">
-    <button class="rowbtn li" data-act="chk" data-id="${x.id}"><div class="grow"><div>${esc(x.table)} <span class="tag ${x.pay === 'nisyə' ? 'low' : ''}">${x.pay === 'qarışıq' ? 'nağd ' + money(x.cash) + ' + kart ' + money(x.card) : esc(x.pay)}</span></div>
-    <small>${x.label ? esc(x.label) + ', ' : ''}${r.from !== r.to ? dayLabel(x.day) + ', ' : ''}${hm(x.closedAt)}${x.by ? ', ' + esc(x.by) : ''}${x.custName ? ', ' + esc(x.custName) : ''}${x.discount ? ', endirim ' + money(x.discount) : ''}${x.tip ? ', bəxşiş ' + money(x.tip) : ''}${x.backdated ? ', sonradan yazılıb' : ''}</small></div><div class="amt">${money(x.total)}</div></button>
+    <button class="rowbtn li" data-act="chk" data-id="${x.id}"><div class="grow"><div>${esc(x.label || x.table)} <span class="tag ${x.pay === 'nisyə' ? 'low' : ''}">${x.pay === 'qarışıq' ? 'nağd ' + money(x.cash) + ' + kart ' + money(x.card) : esc(x.pay)}</span></div>
+    <small>${r.from !== r.to ? dayLabel(x.day) + ', ' : ''}${hm(x.closedAt)}${x.by ? ', ' + esc(x.by) : ''}${x.custName ? ', ' + esc(x.custName) : ''}${x.discount ? ', endirim ' + money(x.discount) : ''}${x.tip ? ', bəxşiş ' + money(x.tip) : ''}${x.backdated ? ', sonradan yazılıb' : ''}</small></div><div class="amt">${money(x.total)}</div></button>
     ${S.openChk === x.id ? `<div class="det">${(x.items || []).map(l => `${esc(l.name)} × ${l.qty} = ${money(l.price * l.qty)}`).join('<br>')}
       ${x.note ? '<br>Qeyd: ' + esc(x.note) : ''}<br>Açılıb ${hm(x.openedAt)}${x.openedBy ? ' (' + esc(x.openedBy) + ')' : ''}, bağlanıb ${hm(x.closedAt)}
       <div class="row" style="margin-top:8px"><button class="btn sm" data-act="reopenSale" data-id="${x.id}">Çeki düzəlt</button><button class="btn warn sm" data-act="delSale" data-id="${x.id}">Çeki sil</button></div></div>` : ''}</div>`).join('') + '</div>';
