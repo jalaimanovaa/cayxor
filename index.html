@@ -438,6 +438,7 @@ td,th{font-size:16px}
 .brow-in .bsum{flex:1;min-width:70px;text-align:right;font-weight:600}
 .btot{margin-top:12px;font-weight:600;font-size:18px;text-align:right}
 .btn{white-space:normal;text-align:center}
+.shopen{border-color:var(--green)}
 </style>
 </head>
 <body data-view="lock">
@@ -577,7 +578,7 @@ const S = window.S = {
   buyP: { k: 'today' }, buys: null, bTab: 'buy', bSel: '', bQty: '', bSum: '', bSumAuto: true, bDate: '', bSup: '', bDebt: false,
   xSel: '', xSum: '', xNote: '', xDate: '',
   repP: { k: 'today' }, rep: null, cmp: null, openChk: null, dl: null,
-  logP: { k: 'today' }, logs: null, logKind: '',
+  shiftP: { k: 'week' }, shiftData: null, openShift: null, logP: { k: 'today' }, logs: null, logKind: '',
   stDay: dayStr(), stData: null, stMonth: null,
   ledOpen: null, ledKind: 'm', nq: '', draft: null, pd: null
 };
@@ -674,6 +675,7 @@ const IC = {
   sup: svg('<path d="M2.5 6.5h11v10h-11zM13.5 10h4l3 3.2v3.3h-7"/><circle cx="6.5" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>'),
   log: svg('<path d="M6 3.5h12v17H6z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
   help: svg('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8M12 17.2v.3"/>'),
+  shifts: svg('<path d="M4 6h16M4 12h16M4 18h10"/><path d="M19.5 15.5a3 3 0 1 1-2.6 4.5 2.4 2.4 0 0 0 2.6-4.5Z"/>'),
   shiftAsk: svg('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>'),
   eodToday: svg('<path d="M4 5.5h16v10H9l-5 4v-14Z"/><path d="M8 9.5h8M8 12.5h5"/>'),
   settings: svg('<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>')
@@ -682,7 +684,7 @@ const GL = '<path class="tea" d="M9.2 15h3.6c.4 2.6 5.8 4 5.8 8.6 0 2.4-2.8 3.4-
 const glass = () => `<svg class="gl" viewBox="0 0 22 32" aria-hidden="true">${GL}</svg>`;
 
 /* ---------- render ---------- */
-const MORE_SUB = ['products','stock','staff','sup','log','help','count'];
+const MORE_SUB = ['products','stock','staff','sup','log','help','count','shifts'];
 const WORKER_VIEWS = ['tables','tab','nisye','led'];
 let rq = 0;
 function render(){ if (rq) return; rq = requestAnimationFrame(() => { rq = 0; draw(); }); }
@@ -708,7 +710,7 @@ function draw(){
   const items = isAdmin() ? [['tables','Masalar'],['nisye','Nisyə'],['buys','Bazarlıq'],['rep','Hesabat'],['more','Daha çox']] : [['tables','Masalar'],['nisye','Nisyə']];
   const nk = S.view === 'tab' ? 'tables' : MORE_SUB.includes(S.view) ? 'more' : S.view === 'led' ? (S.ledKind === 't' ? 'more' : 'nisye') : S.view;
   $('#nav').innerHTML = `<div class="in" style="grid-template-columns:repeat(${items.length},1fr)">` + items.map(([k, l]) => `<button class="${nk === k ? 'on' : ''}" data-act="go" data-v="${k}">${IC[k]}${l}</button>`).join('') + '</div>';
-  const V = { count: vCount, help: vHelp, tab: vTab, nisye: vNisye, led: vLed, buys: vBuys, rep: vRep, more: vMore, products: vProducts, stock: vStock, staff: vStaff, sup: vSup, log: vLog };
+  const V = { shifts: vShifts, count: vCount, help: vHelp, tab: vTab, nisye: vNisye, led: vLed, buys: vBuys, rep: vRep, more: vMore, products: vProducts, stock: vStock, staff: vStaff, sup: vSup, log: vLog };
   $('#app').innerHTML = (V[S.view] || vTables)() + resetFor(S.view);
   restore();
 }
@@ -735,6 +737,7 @@ function topBar(){
     case 'staff': return `${backBtn('more','Geri')}<h1>İşçilər</h1><button class="btn pri sm" data-act="staffForm">+ İşçi</button>`;
     case 'sup': return `${backBtn('more','Geri')}<h1>Tədarükçülər</h1><button class="btn pri sm" data-act="ledForm" data-k="t">+ Yeni</button>`;
     case 'log': return `${backBtn('more','Geri')}<h1>Ləğv jurnalı</h1>`;
+    case 'shifts': return `${backBtn('more','Geri')}<h1>Növbələr</h1><button class="btn pri sm" data-act="shiftAsk">🌙 Bağla</button>`;
     case 'help': return `${backBtn('more','Geri')}<h1>Təlimat</h1>`;
   }
   return '';
@@ -795,7 +798,7 @@ function vTables(){
     (edit ? '<button class="tile add" data-act="addTable">+ Masa</button><button class="tile add" data-act="addMany">+ Bir neçə masa</button>' : '') + '</div>';
   if (!edit) { const ot = S.tabs.own, ob = ot?.items?.length;
     h += `<button class="tile ownt ${ob ? 'busy' : ''}" data-act="openT" data-id="own"><span class="nm">Bizim masa</span><span class="info">${ob ? `<b>${money(tabTotal(ot))}</b><small>${ot.items.reduce((a, l) => a + l.qty, 0)} ədəd, satış deyil</small>` : '<small>Özümüz üçün götürdüklərimizi bura yazın. Satışa düşmür, anbardan çıxılır.</small>'}</span></button>`; }
-  if (!edit) { const L = S.shift && S.shift.last; h += `<button class="btn pri shiftbtn" data-act="shiftAsk">🌙 Növbəni bağla</button>${L ? `<p class="hint" style="text-align:center">Son növbə bağlanıb: ${fmtTs(L.at)}${L.by ? ', ' + esc(L.by) : ''}</p>` : ''}`; }
+  if (!edit) { const L = S.shift && S.shift.last; h += `<button class="btn pri shiftbtn" data-act="shiftAsk">🌙 Növbəni bağla</button>${L ? `<button class="btn ghost sm" style="width:100%;margin-top:8px" data-act="go" data-v="shifts">Son növbə bağlanıb: ${fmtTs(L.at)}${L.by ? ', ' + esc(L.by) : ''} · Bütün növbələr ›</button>` : '<button class="btn ghost sm" style="width:100%;margin-top:8px" data-act="go" data-v="shifts">Bütün növbələr ›</button>'}`; }
   if (edit) h += '<p class="muted" style="margin-top:14px">Adı dəyişmək üçün masanın adına vurun. ‹ və › ilə sıranı dəyişin. Dolu masanı silmək olmur.</p>';
   return h;
 }
@@ -957,7 +960,7 @@ function buyList(fn, empty){
 
 /* ---------- more ---------- */
 function vMore(){
-  return '<div class="tiles">' + [['shiftAsk','Növbəni bağla','Hesabatı WhatsApp-a göndər'],['eodToday','Gün sonu','Bugünkü hesabat, təqvim günü üzrə'],['products','Menyu və setlər','Qiymətlər, çay setləri, reseptlər'],['stock','Anbar','Mallar, sayım, minimum'],['staff','İşçilər','Davamiyyət, verilən pullar, kodlar'],
+  return '<div class="tiles">' + [['shiftAsk','Növbəni bağla','Hesabatı WhatsApp-a göndər'],['shifts','Növbələr','Bağlanan və bağlanmayan bütün növbələr'],['eodToday','Gün sonu','Bugünkü hesabat, təqvim günü üzrə'],['products','Menyu və setlər','Qiymətlər, çay setləri, reseptlər'],['stock','Anbar','Mallar, sayım, minimum'],['staff','İşçilər','Davamiyyət, verilən pullar, kodlar'],
     ['sup','Tədarükçülər','Kimdən alırıq, borcumuz'],['log','Ləğv jurnalı','Silinən və azaldılan sifarişlər'],['settings','Parametrlər','Ad, aylıq hədəf, görünüş'],['help','Təlimat','Proqramdan necə istifadə etməli']]
     .map(([k, l, d]) => `<button data-act="${['settings','eodToday','shiftAsk'].includes(k) ? k : 'go'}" data-v="${k}">${IC[k]}<b>${l}</b><small>${d}</small></button>`).join('') + '</div>'; }
 
@@ -1261,6 +1264,7 @@ const HELP = [
  ['Növbəni bağlamaq və WhatsApp hesabatı', `<ul><li>Gecə işi bitəndə Masalar ekranının ən aşağısındakı <b>🌙 Növbəni bağla</b> düyməsinə basın (və ya Daha çox → Növbəni bağla).</li>
   <li>Hesabat təqvim gününə görə yox, <b>əvvəlki növbə bağlanandan bu ana qədər</b> olanları əhatə edir. Gecə yarısından sonra bağlasanız da, axşamın satışları düşür.</li>
   <li>Açıq masa varsa, proqram xəbərdarlıq edir. Onları əvvəlcə bağlayın.</li>
+  <li><b>Növbələr:</b> Daha çox → Növbələr (və ya Masalar ekranında "Bütün növbələr"). Yuxarıda hazırkı açıq növbə, altında günlər üzrə bütün növbələr: ✅ bağlanan (kim, nə vaxt, satış, kassa fərqi) və ⚠️ bağlanmayan günlər. Hər birinə "›" ilə basıb hesabatına baxmaq və onu WhatsApp-a və ya Telegram-a yenidən göndərmək olar.</li>
   <li>Kassadakı nağdı sayıb yazsanız, proqram nə qədər olmalı olduğunu hesablayır və fərqi (artıq və ya əskik) hesabata yazır.</li>
   <li>Parametrlərdə hesabatın hara gedəcəyini seçin: <b>Telegram</b> (avtomatik, dərhal), <b>WhatsApp</b> (hazır mesajla açılır, siz göndər basırsınız) və ya CallMeBot (avtomatik, amma gecikə bilər). Bağlayandan sonra WhatsApp düyməsi həmişə çıxır.</li>
   <li><b>Telegram botu qoşmaq:</b> Telegram-da @BotFather-ə /newbot yazın, ad verin, verdiyi açarı (token) Parametrlərə yapışdırın. Sonra öz botunuzu tapıb ona "salam" yazın, Parametrlərdə "Tap" basın, Chat ID özü dolacaq. "Test mesajı" ilə yoxlayın.</li></ul>`],
@@ -1281,6 +1285,40 @@ function vHelp(){ return '<div class="help" style="margin:14px 0 20px">' + HELP.
 
 /* ---------- shift close ---------- */
 const fmtTs = ts => { const d = new Date(ts); return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + hm(ts); };
+/* ---------- növbələr tarixçəsi ---------- */
+const bizStart = ds => { const [y, m, d] = ds.split('-').map(Number); return new Date(y, m - 1, d, dayStartH()).getTime(); };
+async function rangeRP(from, to){ const fd = bizOf(from), td = bizOf(to);
+  const [D, b] = await Promise.all([loadDays(fd, td), Store.range('buys', 'day', fd, td)]);
+  const inR = x => { const t = x.closedAt || x.at || 0; return t > from && t <= to; };
+  return { from, to, days: D.days, checks: D.checks.filter(inR), logs: D.logs.filter(inR), pays: D.pays.filter(inR), inc: D.inc.filter(inR), own: D.own.filter(inR),
+    buys: b.filter(x => x.at ? inR(x) : x.day >= fd && x.day <= td), r: { from: fd, to: td } }; }
+async function loadShifts(){ S.shiftData = null; S.openShift = null; render(); const r = period(S.shiftP);
+  const [D, O] = await Promise.all([loadDays(r.from, r.to), loadShift()]); S.shiftData = { ...D, r }; S.openShift = O; render(); }
+function vShifts(){
+  let h = `<div style="margin-top:14px">${perChips('shift')}</div>`;
+  if (!S.shiftData) return h + '<div class="loading">Yüklənir…</div>';
+  const O = S.openShift, oo = O ? repCalc(O) : null;
+  if (O) h += `<div class="card shopen" style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>🟢 Açıq növbə</b><small>${O.first ? 'son 24 saat' : 'başlayıb ' + fmtTs(O.from)}</small></div>
+    <div class="row" style="justify-content:space-between;margin-top:6px"><span>Satış: <b>${money(oo.tot)}</b>, ${oo.n} çek</span><span>Kassada nağd: <b>${money(oo.cash + oo.incCash + oo.tipCash)}</b></span></div>
+    <div class="row" style="margin-top:10px"><button class="btn pri sm" data-act="shiftAsk">🌙 Növbəni bağla</button><button class="btn sm" data-act="shiftOpenView">Hesabata bax</button></div></div>`;
+  const D = S.shiftData, days = [...new Set([...D.days.map(d => d.day), ...D.checks.map(c => c.day)])].sort().reverse();
+  if (!days.length) return h + '<p class="muted" style="margin-top:14px">Bu dövrdə növbə yoxdur.</p>';
+  days.forEach(ds => { const doc = D.days.find(d => d.day === ds) || {}, sh = ent(doc.shifts).sort((a, b) => b.at - a.at), ch = D.checks.filter(c => c.day === ds), dtot = sum(ch, c => c.total);
+    h += `<div class="dayhd"><span>${dayLabel(ds)}</span><span>${money(dtot)}</span></div><div class="card" style="padding:4px 16px">`;
+    if (sh.length) h += sh.map(x => { const dc = x.diff === null || x.diff === undefined ? '' : x.diff === 0 ? '<span class="tag ok">kassa düz</span>' : x.diff > 0 ? `<span class="tag br">+${money(x.diff)} artıq</span>` : `<span class="tag low">${money(-x.diff)} əskik</span>`;
+      return `<div class="li"><div class="grow"><div>✅ Bağlanıb ${hm(x.at)}${x.by ? ', ' + esc(x.by) : ''} ${dc}</div><small>${fmtTs(x.from)} – ${fmtTs(x.at)}${x.counted !== null && x.counted !== undefined ? ', sayılıb ' + money(x.counted) + ' (olmalı ' + money(x.expected) + ')' : ''}</small></div>
+        <div class="amt">${money(x.total)}</div><button class="editic" data-act="shiftView" data-f="${x.from}" data-t="${x.at}" data-id="${x.id}" data-day="${ds}" aria-label="Hesabat" style="background:none">›</button></div>`; }).join('');
+    else if (ch.length && !(O && ds === dayStr())) h += `<div class="li"><div class="grow"><div class="debt">⚠️ Növbə bağlanmayıb</div><small>${ch.length} çek, proqramda "Növbəni bağla" basılmayıb</small></div>
+        <div class="amt">${money(dtot)}</div><button class="editic" data-act="shiftView" data-f="${bizStart(ds)}" data-t="${bizStart(ds) + 86400000}" data-day="${ds}" aria-label="Hesabat" style="background:none">›</button></div>`;
+    else h += `<div class="li"><div class="grow"><small>${ch.length ? 'Növbə hələ açıqdır (yuxarıda)' : 'Satış olmayıb'}</small></div></div>`;
+    h += '</div>'; });
+  return h + '<div style="height:16px"></div>';
+}
+function shiftReportModal(text){ S.shiftText2 = text;
+  modalUpd(`<h2>Növbə hesabatı</h2><textarea id="eodT" readonly style="min-height:240px">${esc(text)}</textarea>
+    <a class="btn pri wa" style="width:100%;margin-top:12px;text-decoration:none" href="${waLink(text)}" target="_blank" rel="noopener">WhatsApp-a göndər</a>
+    <div class="acts" style="margin-top:10px">${S.settings.tgToken && S.settings.tgChat ? '<button class="btn" data-act="shiftTg">Telegram-a göndər</button>' : ''}<button class="btn" data-act="copyEod">Kopyala</button></div>
+    <button class="btn ghost" style="width:100%;margin-top:10px" data-act="mClose">Bağla</button>`); }
 async function loadShift(){ const last = S.shift && S.shift.last, now = Date.now(), from = last && last.at ? last.at : now - 24 * 3600 * 1000;
   const fd = bizOf(from), td = dayStr();
   const [D, b] = await Promise.all([loadDays(fd, td), Store.range('buys', 'day', fd, td)]);
@@ -1472,7 +1510,7 @@ const ACT = {
     const u = staffById(S.me.id); u.pin = pinHash(a, u.id); saveStaff(); closeModal(); toast('Kod dəyişdi'); },
 
   go: el => { const v = el.dataset.v; closeModal(); S.view = v; S.edit = false; window.scrollTo(0, 0);
-    if (v === 'buys') loadBuys(); if (v === 'rep') { loadRep(); loadCmp(); } if (v === 'log') loadLogs(); if (v === 'staff') { S.stDay = dayStr(); loadStaff(); } render(); },
+    if (v === 'buys') loadBuys(); if (v === 'rep') { loadRep(); loadCmp(); } if (v === 'log') loadLogs(); if (v === 'shifts') loadShifts(); if (v === 'staff') { S.stDay = dayStr(); loadStaff(); } render(); },
   back: () => { S.view = 'tables'; S.open = null; S.q = ''; render(); },
   toggleEdit: () => { S.edit = !S.edit; render(); },
   zone: el => { S.zone = el.dataset.z; render(); },
@@ -1776,6 +1814,14 @@ const ACT = {
       <div class="acts" style="margin-top:10px"><button class="btn" data-act="copyEod">Kopyala</button>${navigator.share ? '<button class="btn" data-act="shareEod">Paylaş</button>' : ''}</div>
       ${S.settings.wa ? '' : '<p class="hint">Hesabatın həmişə eyni nömrəyə getməsi üçün Parametrlərdə WhatsApp nömrəsini yazın.</p>'}
       <button class="btn ghost" style="width:100%;margin-top:10px" data-act="mClose">Bağla</button>`); },
+  shiftView: async el => { const f = +el.dataset.f, t = +el.dataset.t; modal('<h2>Növbə hesabatı</h2><p class="muted">Hazırlanır…</p>');
+    const RP = await rangeRP(f, t); let text = eodText(RP, (el.dataset.id ? 'Növbə: ' : 'Bağlanmamış gün: ') + fmtTs(f) + ' – ' + fmtTs(t));
+    if (el.dataset.id) { const doc = S.shiftData.days.find(d => d.day === el.dataset.day), x = doc && doc.shifts && doc.shifts[el.dataset.id];
+      if (x && x.counted !== null && x.counted !== undefined) text += '\nKassada sayıldı: ' + money(x.counted) + ' (fərq: ' + (x.diff > 0 ? '+' : '') + money(x.diff) + ')';
+      if (x && x.by) text += '\nBağlayan: ' + x.by + ', ' + hm(x.at); }
+    shiftReportModal(text); },
+  shiftOpenView: () => { const O = S.openShift; if (!O) return; modal('<h2>Növbə hesabatı</h2>'); shiftReportModal(eodText(O, 'Açıq növbə: ' + fmtTs(O.from) + ' – ' + fmtTs(O.to))); },
+  shiftTg: async () => { const r = await sendTG(S.shiftText2 || ''); toast(r === 'ok' || r === 'unknown' ? 'Telegram-a göndərildi' : 'Telegram xətası'); },
   shiftAsk: async () => { modal('<h2>Növbəni bağla</h2><p class="muted">Hesabat hazırlanır…</p>'); const RP = await loadShift(); S.shiftRP = RP;
     const open = S.tables.filter(t => S.tabs[t.id]?.items?.length), openSum = sum(open, t => tabTotal(S.tabs[t.id])), exp = shiftExpected(RP);
     const label = fmtTs(RP.from) + ' – ' + fmtTs(RP.to), ch = repChannel(), auto = Store.mode !== 'cloud' && ((ch === 'tg' && S.settings.tgToken && S.settings.tgChat) || (ch === 'cmb' && S.settings.wa && S.settings.cm));
@@ -1794,7 +1840,7 @@ const ACT = {
     text += '\nBağlayan: ' + S.me.name + ', ' + hm(Date.now());
     const o = repCalc(RP), id = uid(), rec = { from: RP.from, at: Date.now(), by: S.me.name, total: r2(o.tot), expected: exp, counted, diff };
     await Store.set('cfg/shift', { last: rec }); dayMerge(dayStr(), { shifts: { [id]: rec } });
-    const R0 = await sendReport(text);
+    const R0 = await sendReport(text); if (S.view === 'shifts') loadShifts();
     const msg = R0.via === 'tg' ? (R0.res === 'ok' ? '✓ Hesabat Telegram-a göndərildi.' : R0.res === 'unknown' ? 'Hesabat Telegram-a göndərildi, amma təsdiq alınmadı. Telegram-a baxın.' : R0.res === 'offline' ? 'İnternet yoxdur, Telegram-a göndərilmədi.' : 'Telegram xətası: ' + R0.res.replace('err:', '') + '. Parametrlərdə bot açarını və Chat ID-ni yoxlayın.')
       : R0.via === 'cmb' ? (R0.res === 'queued' ? 'Hesabat CallMeBot-a verildi. Gəlişi gecikə bilər.' : 'İnternet yoxdur, avtomatik göndərilmədi.') : '';
     modalUpd(`<h2>Növbə bağlandı</h2>${msg ? `<p class="${R0.res === 'ok' ? 'up' : ''}" style="font-weight:600">${esc(msg)}</p>` : ''}
@@ -1893,7 +1939,7 @@ async function finishPay(kind, cust, btn){
   if (cust) Store.merge('ledgers/' + cust.id, { e: { [id]: { type: 'borc', amount: total, note: t.name + ' hesabı', at: now, by: S.me.name } } });
   closeModal(); S.view = 'tables'; S.open = null; S.q = ''; render(); toast(t.name + ' bağlandı: ' + money(total) + ' ' + (kind === 'qarışıq' ? '(nağd ' + money(sale.cash) + ', kart ' + money(sale.card) + ')' : kind) + (cust ? ' (' + cust.name + ')' : ''));
 }
-function reloadKey(k){ if (k === 'buy') loadBuys(); else if (k === 'rep') loadRep(); else if (k === 'log') loadLogs(); render(); }
+function reloadKey(k){ if (k === 'shift') loadShifts(); else if (k === 'buy') loadBuys(); else if (k === 'rep') loadRep(); else if (k === 'log') loadLogs(); render(); }
 async function loadBuys(){ S.buys = null; render(); const r = period(S.buyP); S.buys = await Store.range('buys', 'day', r.from, r.to); render(); }
 
 /* ---------- events ---------- */
