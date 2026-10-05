@@ -1152,7 +1152,7 @@ function vRep(){
     <small>${r.from !== r.to ? dayLabel(x.day) + ', ' : ''}${hm(x.closedAt)}${x.by ? ', ' + esc(x.by) : ''}${x.custName ? ', ' + esc(x.custName) : ''}${x.discount ? ', endirim ' + money(x.discount) : ''}${x.tip ? ', bəxşiş ' + money(x.tip) : ''}${x.backdated ? ', sonradan yazılıb' : ''}</small></div><div class="amt">${money(x.total)}</div></button>
     ${S.openChk === x.id ? `<div class="det">${(x.items || []).map(l => `${esc(l.name)} × ${l.qty} = ${money(l.price * l.qty)}`).join('<br>')}
       ${x.note ? '<br>Qeyd: ' + esc(x.note) : ''}<br>Açılıb ${hm(x.openedAt)}${x.openedBy ? ' (' + esc(x.openedBy) + ')' : ''}, bağlanıb ${hm(x.closedAt)}
-      <div class="row" style="margin-top:8px"><button class="btn sm" data-act="reopenSale" data-id="${x.id}">Çeki düzəlt</button><button class="btn warn sm" data-act="delSale" data-id="${x.id}">Çeki sil</button></div></div>` : ''}</div>`).join('') + '</div>';
+      <div class="row" style="margin-top:8px"><button class="btn sm" data-act="renameSale" data-id="${x.id}">✎ Adı dəyiş</button><button class="btn sm" data-act="reopenSale" data-id="${x.id}">Çeki düzəlt</button><button class="btn warn sm" data-act="delSale" data-id="${x.id}">Çeki sil</button></div></div>` : ''}</div>`).join('') + '</div>';
   return h;
 }
 function eodText(RP = S.rep, label){ const o = repCalc(RP), r = RP.r, L = [];
@@ -1257,6 +1257,7 @@ const HELP = [
   <li><b>Gün sonu:</b> "Daha çox → Gün sonu" və ya Hesabatda "Gün sonu mətni" basın. "WhatsApp-a göndər" düyməsi WhatsApp-ı hazır mesajla açır, siz yalnız göndər basırsınız. Parametrlərdə nömrə yazsanız, mesaj həmişə o nömrəyə hazırlanır.</li>
   <li><b>Excel üçün yüklə:</b> çeklər CSV faylı kimi yüklənir, Excel-də açılır.</li>
   <li>Çekə basanda içi açılır. <b>"Çeki düzəlt"</b> çeki masaya qaytarır: məhsul əlavə edin və ya çıxarın, yenidən bağlayın, çek öz tarixində qalır. Səhv bağlanmış çeki "Çeki sil" ilə tam silmək olar. Hər ikisi jurnala düşür.</li>
+  <li><b>Çekin adını dəyişmək:</b> çekə basın, "✎ Adı dəyiş" seçin, yeni adı yazın. Yalnız ad dəyişir, məbləğ, tarix və məhsullar qalır.</li>
   <li><b>Çek axtarışı:</b> "Bağlanmış çeklər" altındakı xanaya masanın adını, müvəqqəti adı (məsələn Vip 4), nisyə müştərisini, məhsul adını və ya məbləği yazın. Uyğun çeklər və onların cəmi görünür.</li></ul>`],
  ['Ləğv jurnalı', `<p>Daha çox → Ləğv jurnalı. Pulun itməməsi üçün silinən hər şey burada qalır.</p><ul>
   <li>Bunlar yazılır: sifarişdən çıxarılan məhsul, ödənişsiz boşaldılan masa, verilən endirim, silinən çek, silinən bazarlıq, nisyə və işçi ödənişi.</li>
@@ -1802,6 +1803,15 @@ const ACT = {
     if (P.k === 'custom') { P.from = P.from || r.from; P.to = P.to || r.to; } reloadKey(key); },
   loadRep: () => { loadRep(); loadCmp(); },
   chk: el => { S.openChk = S.openChk === el.dataset.id ? null : el.dataset.id; render(); },
+  renameSale: el => { const x = S.rep.checks.find(c => c.id === el.dataset.id); if (!x) return;
+    modal(`<h2>Çekin adı</h2><p class="muted">${esc(x.table)}, ${dayLabel(x.day)}, ${hm(x.closedAt)}, ${money(x.total)}</p>
+      <label for="rnName">Ad</label><input id="rnName" value="${esc(x.label || '')}" placeholder="${esc(x.table)}" data-enter="saveSaleName">
+      <p class="hint">Boş saxlasanız, masanın öz adı (${esc(x.table)}) görünəcək. Məbləğ və məhsullar dəyişmir.</p>
+      <div class="acts"><button class="btn" data-act="mClose">Ləğv et</button><button class="btn pri" data-act="saveSaleName" data-id="${x.id}">Yadda saxla</button></div>`); },
+  saveSaleName: async el => { const id = el.dataset.id || document.querySelector('#modal [data-act="saveSaleName"][data-id]')?.dataset.id, x = S.rep.checks.find(c => c.id === id); if (!x) return;
+    const label = mv('rnName'); if (label === (x.label || '')) return closeModal();
+    const ok = x.legacy ? await Store.merge('sales/' + x.id, { label }) : await dayMerge(x.day, { checks: { [x.id]: { label } } });
+    if (ok === false) return; x.label = label; closeModal(); render(); toast('Çekin adı: ' + (label || x.table)); },
   reopenSale: el => { const x = S.rep.checks.find(c => c.id === el.dataset.id); if (!x) return; const tid = x.tableId && tableById(x.tableId) ? x.tableId : null;
     if (!tid) return toast('Bu çekin masası tapılmadı');
     if (S.tabs[tid] && S.tabs[tid].items.length) return toast(tableById(tid).name + ' hazırda doludur. Əvvəlcə onu bağlayın.');
