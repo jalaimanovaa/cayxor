@@ -441,7 +441,7 @@ td,th{font-size:16px}
 .shopen{border-color:var(--green)}
 .chartw{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tblw{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.stbl{border-collapse:collapse;width:100%;min-width:640px;font-variant-numeric:tabular-nums}
+.stbl{border-collapse:collapse;width:100%;min-width:740px;font-variant-numeric:tabular-nums}
 .stbl th,.stbl td{padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}
 .stbl th{font-size:13px;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--surface)}
 .stbl .r{text-align:right}
@@ -1381,8 +1381,8 @@ function vSales(){
   const r = D.r, days = []; for (let d = r.from; d <= r.to; d = shiftDay(d, 1)) days.push(d);
   const by = (arr, d) => arr.filter(x => x.day === d);
   const rows = days.map(d => { const o = repCalc({ checks: by(D.checks, d), buys: by(D.buys, d), pays: by(D.pays, d), inc: by(D.inc, d), logs: by(D.logs, d), own: by(D.own, d) }), k = kassaParts(o);
-    return { d, n: o.n, tot: o.tot, nagd: k.nagd, kart: k.kart, nis: k.nis, xerc: o.bz + o.ex, isci: o.sp, net: o.net }; });
-  const T = rows.reduce((a, x) => { for (const f of ['n','tot','nagd','kart','nis','xerc','isci','net']) a[f] = (a[f] || 0) + x[f]; return a; }, {});
+    return { d, n: o.n, tot: o.tot, tt: o.tot + (o.tip || 0), nagd: k.nagd, kart: k.kart, nis: k.nis, xerc: o.bz + o.ex, isci: o.sp, net: o.net }; });
+  const T = rows.reduce((a, x) => { for (const f of ['n','tot','tt','nagd','kart','nis','xerc','isci','net']) a[f] = (a[f] || 0) + x[f]; return a; }, {});
   const worked = rows.filter(x => x.n > 0), best = worked.slice().sort((a, b) => b.tot - a.tot)[0], worst = worked.slice().sort((a, b) => a.tot - b.tot)[0];
   // ümumi göstəricilər
   h += `<div class="stats" style="margin-top:14px">${st('Satış', money(T.tot), 'big')}${st('Çek sayı', T.n || 0)}${st('Günlük orta', money(worked.length ? T.tot / worked.length : 0))}
@@ -1402,9 +1402,9 @@ function vSales(){
     if (worked.length >= 7) h += `<div class="card" style="margin-top:12px"><b>Həftə günlərinə görə orta satış</b>${wd.map(x => `<div class="wdrow"><span>${WDS[x.w]}</span><i style="width:${x.avg / wmax * 100}%"></i><b>${money(x.avg)}</b></div>`).join('')}</div>`; }
   // cədvəl
   const c = v => v ? r2(v).toFixed(2) : '—';
-  h += `<div class="sec">Gün-gün</div><div class="card tblw" style="padding:0"><table class="stbl"><thead><tr><th>Gün</th><th class="r">Çek</th><th class="r">Satış</th><th class="r">Nağd</th><th class="r">Kart</th><th class="r">Nisyə</th><th class="r">Xərc</th><th class="r">İşçi</th><th class="r">Qalıq</th></tr></thead><tbody>
-    ${rows.slice().reverse().map(x => `<tr data-act="salesDay" data-d="${x.d}" class="${x.n ? '' : 'z'} ${best && x.d === best.d ? 'best' : ''}"><td>${+x.d.slice(8)} ${MONTHS[+x.d.slice(5, 7) - 1].slice(0, 3)} <small>${WDS[wdOf(x.d)]}</small></td><td class="r">${x.n || '—'}</td><td class="r"><b>${c(x.tot)}</b></td><td class="r">${c(x.nagd)}</td><td class="r">${c(x.kart)}</td><td class="r">${c(x.nis)}</td><td class="r">${c(x.xerc)}</td><td class="r">${c(x.isci)}</td><td class="r ${x.net < 0 ? 'debt' : ''}">${c(x.net)}</td></tr>`).join('')}
-    </tbody><tfoot><tr><td>Cəmi</td><td class="r">${T.n || 0}</td><td class="r">${c(T.tot)}</td><td class="r">${c(T.nagd)}</td><td class="r">${c(T.kart)}</td><td class="r">${c(T.nis)}</td><td class="r">${c(T.xerc)}</td><td class="r">${c(T.isci)}</td><td class="r">${c(T.net)}</td></tr></tfoot></table></div>
+  h += `<div class="sec">Gün-gün</div><div class="card tblw" style="padding:0"><table class="stbl"><thead><tr><th>Gün</th><th class="r">Çek</th><th class="r">Satış</th><th class="r">Satış+bəxşiş</th><th class="r">Nağd</th><th class="r">Kart</th><th class="r">Nisyə</th><th class="r">Xərc</th><th class="r">İşçi</th><th class="r">Qalıq</th></tr></thead><tbody>
+    ${rows.slice().reverse().map(x => `<tr data-act="salesDay" data-d="${x.d}" class="${x.n ? '' : 'z'} ${best && x.d === best.d ? 'best' : ''}"><td>${+x.d.slice(8)} ${MONTHS[+x.d.slice(5, 7) - 1].slice(0, 3)} <small>${WDS[wdOf(x.d)]}</small></td><td class="r">${x.n || '—'}</td><td class="r"><b>${c(x.tot)}</b></td><td class="r">${c(x.tt)}</td><td class="r">${c(x.nagd)}</td><td class="r">${c(x.kart)}</td><td class="r">${c(x.nis)}</td><td class="r">${c(x.xerc)}</td><td class="r">${c(x.isci)}</td><td class="r ${x.net < 0 ? 'debt' : ''}">${c(x.net)}</td></tr>`).join('')}
+    </tbody><tfoot><tr><td>Cəmi</td><td class="r">${T.n || 0}</td><td class="r">${c(T.tot)}</td><td class="r">${c(T.tt)}</td><td class="r">${c(T.nagd)}</td><td class="r">${c(T.kart)}</td><td class="r">${c(T.nis)}</td><td class="r">${c(T.xerc)}</td><td class="r">${c(T.isci)}</td><td class="r">${c(T.net)}</td></tr></tfoot></table></div>
     <p class="hint">Qalıq = satış + bəxşiş − bazarlıq − xərc − işçilərə verilən. Sətrə basanda həmin günün tam hesabatı açılır. Cədvəl yana sürüşür.</p>
     <button class="btn ghost sm" style="width:100%;margin-bottom:16px" data-act="salesCsv">⬇ Excel üçün yüklə (CSV)</button>`;
   S.salesRows = rows; return h;
@@ -1959,8 +1959,8 @@ const ACT = {
       ${S.settings.wa ? '' : '<p class="hint">Hesabatın həmişə eyni nömrəyə getməsi üçün Parametrlərdə WhatsApp nömrəsini yazın.</p>'}
       <button class="btn ghost" style="width:100%;margin-top:10px" data-act="mClose">Bağla</button>`); },
   salesDay: el => { const d = el.dataset.d; S.repP = { k: 'custom', from: d, to: d }; S.view = 'rep'; window.scrollTo(0, 0); loadRep(); loadCmp(); render(); },
-  salesCsv: () => { const R0 = S.salesRows || []; const L = [['Tarix','Həftə günü','Çek','Satış','Nağd','Kart','Nisyə','Bazarlıq+xərc','İşçilərə','Qalıq'].join(';')];
-    R0.forEach(x => L.push([x.d, WDS[wdOf(x.d)], x.n, ...[x.tot, x.nagd, x.kart, x.nis, x.xerc, x.isci, x.net].map(v => r2(v).toFixed(2).replace('.', ','))].join(';')));
+  salesCsv: () => { const R0 = S.salesRows || []; const L = [['Tarix','Həftə günü','Çek','Satış','Satış+bəxşiş','Nağd','Kart','Nisyə','Bazarlıq+xərc','İşçilərə','Qalıq'].join(';')];
+    R0.forEach(x => L.push([x.d, WDS[wdOf(x.d)], x.n, ...[x.tot, x.tt, x.nagd, x.kart, x.nis, x.xerc, x.isci, x.net].map(v => r2(v).toFixed(2).replace('.', ','))].join(';')));
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + L.join('\n')], { type: 'text/csv;charset=utf-8' })); a.download = 'satis-' + S.salesData.r.from + '_' + S.salesData.r.to + '.csv'; a.click(); },
   shopClear: () => confirmBox('Alınacaqlar siyahısındakı ' + S.shop.length + ' qeydin hamısı silinsin? Anbarda minimumdan az qalan mallar növbəti dəyişiklikdə yenidən siyahıya düşəcək.', 'Hamısını sil', () => { S.shop = []; saveShop(); render(); toast('Alınacaqlar siyahısı təmizləndi'); }),
   fqSet: el => { const k = el.dataset.k; S.fq[k] = S.fq[k] === el.dataset.v ? '' : el.dataset.v; const i = document.getElementById('fq_' + k); if (i) i.value = S.fq[k]; applyFilters(); },
