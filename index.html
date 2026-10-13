@@ -459,6 +459,10 @@ td,th{font-size:16px}
 html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 button,a,.pbtn,.tile,.chip,[data-act]{touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 input,textarea,select{font-size:max(16px,1em)}
+.stat3{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat3 .stat{padding:10px;min-width:0}
+.stat3 .stat .v{font-size:clamp(15px,4.4vw,22px);white-space:nowrap}
+.stat3 .stat .k{font-size:13px}
 </style>
 </head>
 <body data-view="lock">
@@ -1151,8 +1155,9 @@ function vLog(){
 async function loadCmp(){ const now = bizDate(), y = now.getFullYear(), m = now.getMonth(), dayN = now.getDate();
   const ps = new Date(y, m - 1, 1), pe = new Date(y, m, 0), pse = new Date(y, m - 1, Math.min(dayN, pe.getDate()));
   const R = await loadDays(dayStr(ps), dayStr(now)), cs = dayStr(now).slice(0, 8) + '01';
-  S.cmp = { cur: sum(R.checks.filter(c => c.day >= cs), c => c.total), prevSame: sum(R.checks.filter(c => c.day < cs && c.day <= dayStr(pse)), c => c.total),
-    prevFull: sum(R.checks.filter(c => c.day < cs), c => c.total), dayN, dim: new Date(y, m + 1, 0).getDate(), m }; render(); }
+  const nisP = c => c.pay === 'nisyə' ? (c.nisAmt !== undefined && c.nisAmt !== null ? c.nisAmt : c.total) : 0;
+  const got = f => sum(R.checks.filter(c => f(c.day)), c => (+c.total || 0) + (+c.tip || 0) - nisP(c)) + sum(R.inc.filter(x => f(x.day)), x => x.amount);
+  S.cmp = { cur: got(d => d >= cs), prevSame: got(d => d < cs && d <= dayStr(pse)), prevFull: got(d => d < cs), dayN, dim: new Date(y, m + 1, 0).getDate(), m }; render(); }
 async function loadRep(){ S.rep = null; render(); const r = period(S.repP);
   const [d, b] = await Promise.all([loadDays(r.from, r.to), Store.range('buys', 'day', r.from, r.to)]); S.rep = { ...d, buys: b, r }; render(); }
 function repCalc(RP = S.rep){ const { checks: s, buys: b, pays, inc, logs } = RP;
@@ -1175,7 +1180,7 @@ function kassaCard(o){ const k = kassaParts(o), pct = v => k.cem ? Math.round(v 
     ${o.cbx ? `<div class="krow sub"><span>Karta artıq vurulub, nağd qaytarılıb</span><span></span><b>${money(o.cbx)}</b></div>` : ''}<div class="krow sub"><span>Kassada nağd olmalıdır</span><span></span><b>${money(o.cash + o.incCash + o.tipCash - (o.cbx || 0))}</b></div></div>`; }
 function monthCard(){ const c = S.cmp; if (!c) return '<div class="card" style="margin-top:14px"><small>Bu ay hesablanır…</small></div>';
   const tgt = S.settings.target || 0, pct = c.prevSame ? (c.cur - c.prevSame) / c.prevSame * 100 : null;
-  let h = `<div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><small>Bu ay, ${MONTHS[c.m]}</small><div style="font-size:28px;font-weight:700">${money(c.cur)}</div></div>
+  let h = `<div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><small>Bu ay, ${MONTHS[c.m]}</small><div style="font-size:28px;font-weight:700">${money(c.cur)}</div><small class="muted" style="display:block;font-size:13px">satış + bəxşiş + borcdan qaytarılan, nisyəsiz</small></div>
     ${pct !== null ? `<div class="${pct >= 0 ? 'up' : 'down'}" style="font-weight:600;font-size:18px">${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(0)}%</div>` : ''}</div>
     <small style="display:block">Keçən ayın ilk ${c.dayN} günündə: ${money(c.prevSame)}. Keçən ay tam: ${money(c.prevFull)}.</small>`;
   if (tgt) { const p = Math.min(100, c.cur / tgt * 100), left = Math.max(0, tgt - c.cur), dl = Math.max(1, c.dim - c.dayN + 1);
@@ -1189,7 +1194,7 @@ function vRep(){
   const st = (k, v, cls = '') => `<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
   h += `<div class="stats" style="margin-top:14px">${st('Qalıq (satış + bəxşiş − bazarlıq − xərc − işçi)', money(o.net), 'big' + (o.net < 0 ? ' neg' : ''))}
     ${kassaCard(o)}
-    ${st('Satış', money(o.tot))}${st('Çek sayı', o.n)}
+    <div class="stat3">${st('Satış', money(o.tot))}${st('Çek sayı', o.n)}${st('Satış + bəxşiş', money(o.tot + (o.tip || 0)))}</div>
     ${o.tip ? st('Bəxşiş (artıq ödəniş)', money(o.tip)) : ''}
     ${st('Bazarlıq', money(o.bz))}${st('Xərclər', money(o.ex))}${st('İşçilərə verilən', money(o.sp))}
     ${o.ownT ? st('Bizim masa (satış deyil)', money(o.ownT) + (o.ownC ? '<small style="display:block;font-size:14px;font-weight:400">maya ~' + money(o.ownC) + '</small>' : '')) : ''}
