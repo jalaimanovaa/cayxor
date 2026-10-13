@@ -2,7 +2,7 @@
 <html lang="az">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Çayxor</title>
 <meta name="theme-color" content="#0E5A48">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -455,6 +455,10 @@ td,th{font-size:16px}
 .wdrow i{display:block;height:10px;border-radius:5px;background:var(--green);min-width:2px}
 .fqchips{margin-top:8px}
 .fqchips .chip{min-height:36px;padding:6px 12px;font-size:15px}
+/* iPhone: tez-tez basanda ekran yaxınlaşmasın */
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+button,a,.pbtn,.tile,.chip,[data-act]{touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+input,textarea,select{font-size:max(16px,1em)}
 </style>
 </head>
 <body data-view="lock">
