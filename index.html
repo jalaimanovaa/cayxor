@@ -593,7 +593,7 @@ const S = window.S = {
   xSel: '', xSum: '', xNote: '', xDate: '',
   repP: { k: 'today' }, rep: null, cmp: null, openChk: null, dl: null,
   salesP: { k: 'month' }, salesData: null, shiftP: { k: 'week' }, shiftData: null, openShift: null, logP: { k: 'today' }, logs: null, logKind: '',
-  stDay: dayStr(), stData: null, stMonth: null,
+  stDay: dayStr(), stData: null, stMonth: null, fq: {},
   ledOpen: null, ledKind: 'm', nq: '', draft: null, pd: null
 };
 const ready = () => ['settings','tables','products','stock','stockq','shop','staff','tabs','ledgers','day'].every(k => S.loaded[k]);
@@ -702,6 +702,27 @@ const glass = () => `<svg class="gl" viewBox="0 0 22 32" aria-hidden="true">${GL
 const MORE_SUB = ['products','stock','staff','sup','log','help','count','shifts','sales'];
 const WORKER_VIEWS = ['tables','tab','nisye','led'];
 let rq = 0;
+/* ---------- yerində qalmaq (səhifə yenilənəndə) ---------- */
+function viewLoad(v){ if (v === 'buys') loadBuys(); if (v === 'rep') { loadRep(); loadCmp(); } if (v === 'log') loadLogs(); if (v === 'shifts') loadShifts(); if (v === 'sales') loadSales(); if (v === 'staff') { S.stDay = dayStr(); loadStaff(); } }
+function bootView(){ let sv = null; try { sv = JSON.parse(localStorage.getItem('cayxor-view') || 'null'); } catch(e){}
+  if (!sv || !sv.v || sv.v === 'tables') return;
+  if (sv.v === 'tab' && !(sv.open && tableById(sv.open))) return;
+  if (sv.v === 'led' && !S.ledgers.some(l => l.id === sv.led)) return;
+  S.view = sv.v; S.open = sv.open || null; S.ledOpen = sv.led || null; S.ledKind = sv.lk || 'm'; if (sv.pane) S.pane = sv.pane; if (sv.bt) S.bTab = sv.bt;
+  setTimeout(() => viewLoad(sv.v), 0); }
+function saveView(){ try { localStorage.setItem('cayxor-view', JSON.stringify({ v: S.view, open: S.open, led: S.ledOpen, lk: S.ledKind, pane: S.pane, bt: S.bTab })); } catch(e){} }
+/* ---------- siyahılarda axtarış ---------- */
+const fbox = (key, ph) => `<input type="search" class="fq" id="fq_${key}" data-inp="fq" data-k="${key}" value="${esc(S.fq[key] || '')}" placeholder="🔍 ${ph}" autocomplete="off"><p class="hint flsum" style="display:none;margin:6px 2px 0"></p>`;
+function applyFilters(){ document.querySelectorAll('#app [data-fl]').forEach(root => {
+  const q = (S.fq[root.dataset.fl] || '').trim().toLocaleLowerCase('az'), rows = [...root.querySelectorAll('.li, .cline')];
+  const shown = r => r.style.display !== 'none'; let vis = 0, tot = 0;
+  rows.forEach(r => { const ok = !q || r.textContent.toLocaleLowerCase('az').includes(q); r.style.display = ok ? '' : 'none';
+    if (ok) { vis++; const a = r.querySelector('.amt'); if (a) tot += parseFloat(a.textContent.replace(/[^\d.\-]/g, '')) || 0; } });
+  root.querySelectorAll('.dayhd').forEach(hd => { let n = hd.nextElementSibling, any = false;
+    while (n && !n.classList.contains('dayhd')) { if (n.matches('.li') && shown(n)) any = true; n = n.nextElementSibling; } hd.style.display = !q || any ? '' : 'none'; });
+  root.querySelectorAll('.card').forEach(c => { const rs = [...c.querySelectorAll('.li, .cline')]; if (!rs.length) return;
+    c.style.display = !q || rs.some(shown) ? '' : 'none'; const pv = c.previousElementSibling; if (pv && pv.classList.contains('sec')) pv.style.display = c.style.display; });
+  const fs = root.querySelector('.flsum'); if (fs) { fs.style.display = q ? '' : 'none'; fs.textContent = vis ? vis + ' qeyd tapıldı' + (tot && ['buy','log'].includes(root.dataset.fl) ? ', cəmi ' + money(tot) : '') : 'Axtarışa uyğun heç nə tapılmadı.'; } }); }
 function render(){ if (rq) return; rq = requestAnimationFrame(() => { rq = 0; draw(); }); }
 function draw(){
   const keep = {}; let fid = null, s0 = null, s1 = null;
@@ -718,16 +739,17 @@ function draw(){
     $('#app').innerHTML = setup ? vSetup() : vLock(); restore(); return; }
   if (!S.settings.bizFix1) setTimeout(() => maybeFixBizDays(false), 800);
   if (!popLoadedAt) setTimeout(() => loadPop(), 1200);
+  if (!S.viewBooted) { S.viewBooted = true; bootView(); }
   if (!isAdmin() && !WORKER_VIEWS.includes(S.view)) S.view = 'tables';
   if (!isAdmin() && S.view === 'led' && S.ledKind !== 'm') S.view = 'nisye';
-  document.body.dataset.view = S.view;
+  document.body.dataset.view = S.view; saveView();
   $('#top').innerHTML = '<div class="wrap bar">' + topBar() + '</div>';
   const items = isAdmin() ? [['tables','Masalar'],['nisye','Nisyə'],['buys','Bazarlıq'],['rep','Hesabat'],['more','Daha çox']] : [['tables','Masalar'],['nisye','Nisyə']];
   const nk = S.view === 'tab' ? 'tables' : MORE_SUB.includes(S.view) ? 'more' : S.view === 'led' ? (S.ledKind === 't' ? 'more' : 'nisye') : S.view;
   $('#nav').innerHTML = `<div class="in" style="grid-template-columns:repeat(${items.length},1fr)">` + items.map(([k, l]) => `<button class="${nk === k ? 'on' : ''}" data-act="go" data-v="${k}">${IC[k]}${l}</button>`).join('') + '</div>';
   const V = { sales: vSales, shifts: vShifts, count: vCount, help: vHelp, tab: vTab, nisye: vNisye, led: vLed, buys: vBuys, rep: vRep, more: vMore, products: vProducts, stock: vStock, staff: vStaff, sup: vSup, log: vLog };
   $('#app').innerHTML = (V[S.view] || vTables)() + resetFor(S.view);
-  restore();
+  restore(); applyFilters();
 }
 const meChip = () => `<button class="mechip" data-act="meMenu" aria-label="Hesab">${esc(S.me.name)}</button>`;
 const backBtn = (v, l) => `<button class="btn ghost sm" data-act="go" data-v="${v}" aria-label="${l}">‹<span class="bl"> ${l}</span></button>`;
@@ -890,7 +912,7 @@ function vSup(){
   const L = ledList('t'), owed = L.filter(l => l.b > 0);
   let h = `<div class="card" style="margin-top:14px"><small>Tədarükçülərə borcumuz</small><div class="bigbal ${owed.length ? 'debt' : ''}" style="margin-bottom:0">${money(sum(owed, l => l.b))}</div></div>`;
   if (!L.length) return h + `<div class="card empty" style="margin-top:14px"><h2>Tədarükçü yoxdur</h2><p>Malı kimdən aldığınızı əlavə edin. Bazarlıqda onu düymə ilə seçib "Borca" yaza biləcəksiniz.</p></div>`;
-  return h + `<div class="card" style="padding:4px 16px;margin-top:12px">${ledRows(L, 't')}</div>`;
+  return h + `<div data-fl="sup" style="margin-top:12px">${fbox('sup', 'Tədarükçü axtar')}<div class="card" style="padding:4px 16px;margin-top:10px">${ledRows(L, 't')}</div></div>`;
 }
 function vLed(){
   const l = S.ledgers.find(x => x.id === S.ledOpen); if (!l) { S.view = S.ledKind === 't' ? 'sup' : 'nisye'; return S.ledKind === 't' ? vSup() : vNisye(); }
@@ -961,7 +983,7 @@ function vExp(){
   return h + '</div>' + buyList(b => b.type !== 'Bazarlıq', 'Bu dövrdə xərc yazılmayıb.') + '</div>';
 }
 function buyList(fn, empty){
-  let h = `<div class="card">${perChips('buy')}`;
+  let h = `<div class="card" data-fl="buy">${perChips('buy')}<div style="margin-top:10px">${fbox('buy', 'Axtar: ad, tədarükçü, qeyd, məbləğ')}</div>`;
   if (!S.buys) return h + '<p class="muted">Yüklənir…</p></div>';
   const list = S.buys.filter(fn);
   h += `<div style="margin-top:12px"><small>Cəmi</small><div style="font-size:26px;font-weight:600">${money(sum(list, b => b.sum))}</div></div>`;
@@ -989,6 +1011,7 @@ function vProducts(){
   if (!S.products.some(p => p.kind === 'set')) h += `<div class="card" style="margin-top:14px"><b>Çay setləri qurun</b><p class="muted" style="margin:6px 0 10px">Bir neçə məhsulu bir qiymətə birləşdirin, məsələn çaynik çay, mürəbbə və şirniyyat birlikdə. Set satılanda tərkibindəki hər şey anbardan özü çıxılır.</p>
     <div class="row"><button class="btn pri sm" data-act="prodForm" data-k="set">+ Set yarat</button><button class="btn sm" data-act="seedSets">Nümunə setlər</button></div></div>`;
   const cats = [...new Set(S.products.map(p => p.cat || 'Digər'))];
+  h += `<div data-fl="prod" style="margin-top:14px">${fbox('prod', 'Məhsul axtar')}`;
   cats.forEach(c => {
     h += `<div class="sec">${esc(c)}</div><div class="card" style="padding:4px 16px">` + S.products.filter(p => (p.cat || 'Digər') === c).map(p => {
       const lowp = p.track && p.min > 0 && (p.stock || 0) <= p.min, cost = costOf(p);
@@ -999,6 +1022,7 @@ function vProducts(){
       return `<button class="rowbtn li" data-act="prodForm" data-id="${p.id}" aria-label="${esc(p.name)} düzəliş et"><div class="grow"><div>${esc(p.name)}${p.kind === 'set' ? '<span class="tag br">Set</span>' : ''}${p.track ? `<span class="tag ${lowp ? 'low' : ''}">anbar: ${fq(p.stock || 0)}</span>` : ''}</div>
         ${sub.length ? `<small>${esc(sub.join('; '))}</small>` : ''}</div><div class="amt">${money(p.price)}</div><span class="editic" aria-hidden="true">✎</span></button>`; }).join('') + '</div>';
   });
+  h += '</div>';
   return h + '<p class="muted" style="margin:16px 0">✎ ilə qiyməti, tərkibi və resepti dəyişin. Resept yazılan məhsul satıldıqca anbardakı xammal (çay, qənd, limon) özü azalır, maya dəyəri də bazarlıq qiymətinə görə hesablanır.</p>';
 }
 
@@ -1023,7 +1047,9 @@ function vStock(){
       <button class="pm" data-act="stAdj" data-ref="${it.ref}" data-d="${step}" aria-label="Artır">+</button></div></div>`; };
   if (!items.some(it => it.kind === 's')) h += emptyCard;
   const cats = [...new Set(items.map(it => it.cat))];
+  h += `<div data-fl="stock" style="margin-top:14px">${fbox('stock', 'Mal axtar')}`;
   cats.forEach(c => { h += `<div class="sec">${esc(c)}</div><div class="card" style="padding:4px 16px">${items.filter(it => it.cat === c).map(row).join('')}</div>`; });
+  h += '</div>';
   return h + '<p class="muted" style="margin:16px 0">Sayın üstünə vurub dəqiq rəqəmi yazın (sayım üçün). Reseptdə olan mallar satış olduqca özü azalır, bazarlıqda artır.</p></div>';
 }
 
@@ -1037,7 +1063,9 @@ function vCount(){
     <span class="u">${esc(unit)}</span><input id="m_${ref}" data-keep class="mn" inputmode="decimal" value="${min ? fq(min) : ''}" placeholder="min" aria-label="${esc(name)} minimum"></div>`;
   let h = `<p class="hint" style="margin-top:14px">Saydığınız rəqəmi yazın. Boş saxladığınız mallara toxunulmur. "min" xanası: say bu rəqəmə düşəndə mal alınacaqlar siyahısına keçir.</p>`;
   const all = [...raw.map(x => ({ cat: x.cat || 'Xammal', h: row(x.id, x.name, x.unit || 'ədəd', x.qty || 0, x.min, true) })), ...prods.map(p => ({ cat: p.cat || 'Digər', h: row(p.id, p.name, 'ədəd', p.stock || 0, p.min, !!p.track) }))];
+  h += `<div data-fl="count">${fbox('count', 'Mal axtar')}`;
   [...new Set(all.map(a => a.cat))].forEach(c => { h += `<div class="sec">${esc(c)}</div><div class="card" style="padding:4px 12px">${all.filter(a => a.cat === c).map(a => a.h).join('')}</div>`; });
+  h += '</div>';
   h += `<p class="hint">Reseptlə hazırlanan məhsullar (məsələn çaynik çay) və setlər burada yoxdur. Onların sərfiyyatı xammaldan hesablanır.</p>`;
   return h + `<div style="height:80px"></div><div class="paybar"><div class="in"><div class="tot"><small>Yazılan</small><b id="cCnt">0 mal</b></div><button class="btn pri" data-act="saveCountAll">Yadda saxla</button></div></div>`;
 }
@@ -1085,9 +1113,9 @@ function vLog(){
   const by = {}; L.forEach(x => { const k = x.by || '—'; by[k] = by[k] || { n: 0, s: 0 }; by[k].n++; by[k].s += x.amount; });
   if (Object.keys(by).length) h += '<div class="sec">İşçilərə görə</div><div class="card" style="padding:4px 16px">' + Object.entries(by).sort((a, b) => b[1].s - a[1].s).map(([k, v]) =>
     `<div class="li"><div class="grow"><div>${esc(k)}</div><small>${v.n} qeyd</small></div><div class="amt">${money(v.s)}</div></div>`).join('') + '</div>';
-  h += '<div class="sec">Qeydlər</div><div class="card" style="padding:4px 16px;margin-bottom:16px">' + (L.length ? L.map(x => `<div class="li"><div class="grow"><div>${esc(x.text)}${x.table ? ' <span class="tag">' + esc(x.table) + '</span>' : ''}</div>
+  h += '<div class="sec">Qeydlər</div><div data-fl="log">' + fbox('log', 'Axtar: masa, ad, qeyd, məbləğ') + '<div class="card" style="padding:4px 16px;margin:10px 0 16px">' + (L.length ? L.map(x => `<div class="li"><div class="grow"><div>${esc(x.text)}${x.table ? ' <span class="tag">' + esc(x.table) + '</span>' : ''}</div>
     <small>${S.logP.k === 'today' ? '' : dayLabel(x.day) + ', '}${x.manual ? '' : hm(x.at) + ', '}${esc(LOGK[x.kind] || x.kind)}${x.by ? ', ' + esc(x.by) : ''}${x.manual ? ', əl ilə yazılıb' : ''}</small></div><div class="amt ${x.kind === 'tez' ? 'muted' : 'debt'}">${money(x.amount)}</div></div>`).join('')
-    : '<p class="muted">Bu dövrdə heç nə silinməyib.</p>') + '</div>';
+    : '<p class="muted">Bu dövrdə heç nə silinməyib.</p>') + '</div></div>';
   return h + '<p class="hint" style="margin-bottom:16px">"Dərhal düzəliş" — məhsul əlavə olunduqdan sonra 30 saniyə ərzində çıxarılıb, adətən səhv vurulmadır. Digər çıxarmalara diqqət edin.</p>';
 }
 
@@ -1288,7 +1316,7 @@ const HELP = [
   <li>Kassadakı nağdı sayıb yazsanız, proqram nə qədər olmalı olduğunu hesablayır və fərqi (artıq və ya əskik) hesabata yazır.</li>
   <li>Parametrlərdə hesabatın hara gedəcəyini seçin: <b>Telegram</b> (avtomatik, dərhal), <b>WhatsApp</b> (hazır mesajla açılır, siz göndər basırsınız) və ya CallMeBot (avtomatik, amma gecikə bilər). Bağlayandan sonra WhatsApp düyməsi həmişə çıxır.</li>
   <li><b>Telegram botu qoşmaq:</b> Telegram-da @BotFather-ə /newbot yazın, ad verin, verdiyi açarı (token) Parametrlərə yapışdırın. Sonra öz botunuzu tapıb ona "salam" yazın, Parametrlərdə "Tap" basın, Chat ID özü dolacaq. "Test mesajı" ilə yoxlayın.</li></ul>`],
- ['Parametrlər və görünüş', `<ul><li><b>Satış cədvəli:</b> Daha çox → Satış cədvəli. Seçilən dövr (standart: bu ay) üçün ümumi göstəricilər, gündəlik satış qrafiki, həftə günlərinə görə orta satış və gün-gün cədvəl: çek, satış, nağd, kart, nisyə, xərc, işçi, qalıq. Sətrə və ya sütuna basanda həmin günün tam hesabatı açılır. Cədvəli CSV kimi Excel-ə yükləmək olar.</li><li><b>Ləğv jurnalına əl ilə yazmaq:</b> Daha çox → Ləğv jurnalı → "+ Əlavə et". Masa və ya ad, məbləğ, tarix, növ və istəsəniz qeyd yazın. Belə qeydlər "əl ilə yazılıb" kimi görünür.</li><li><b>Dövr üzrə sıfırlama:</b> Satışlar, Bazarlıq və xərclər, Ləğv jurnalı və İşçilər sıfırlananda pəncərədə dövr seçilir: Bu gün, Dünən, Sırağagün, Bu həftə, Bu ay, Tarix seç və ya Hamısı. Standart olaraq yalnız bu gün silinir.</li><li><b>İş günü:</b> Parametrlərdə "Yeni iş günü saat neçədə başlayır" (standart 06:00). Bu saata qədər olan satış, xərc və davamiyyət əvvəlki günə yazılır. Gecə 01:00-dakı satış "Bu gün" hesabatında görünür, səhər 06:00-dan sonra yeni gün başlayır.</li><li>Daha çox → Parametrlər, ya da Masalar ekranında çayxananın adına basın.</li>
+ ['Parametrlər və görünüş', `<ul><li><b>Axtarış:</b> Bazarlıq və xərclər, Ləğv jurnalı, Menyu, Anbar, Sayım və Tədarükçülər siyahılarının yuxarısında 🔍 axtarış xanası var. Ad, qeyd, masa və ya məbləğ yazın, uyğun qeydlər və cəmi görünür.</li><li><b>Səhifə yenilənəndə</b> proqram olduğunuz bölmədə qalır (masalara atmır).</li><li><b>Satış cədvəli:</b> Daha çox → Satış cədvəli. Seçilən dövr (standart: bu ay) üçün ümumi göstəricilər, gündəlik satış qrafiki, həftə günlərinə görə orta satış və gün-gün cədvəl: çek, satış, nağd, kart, nisyə, xərc, işçi, qalıq. Sətrə və ya sütuna basanda həmin günün tam hesabatı açılır. Cədvəli CSV kimi Excel-ə yükləmək olar.</li><li><b>Ləğv jurnalına əl ilə yazmaq:</b> Daha çox → Ləğv jurnalı → "+ Əlavə et". Masa və ya ad, məbləğ, tarix, növ və istəsəniz qeyd yazın. Belə qeydlər "əl ilə yazılıb" kimi görünür.</li><li><b>Dövr üzrə sıfırlama:</b> Satışlar, Bazarlıq və xərclər, Ləğv jurnalı və İşçilər sıfırlananda pəncərədə dövr seçilir: Bu gün, Dünən, Sırağagün, Bu həftə, Bu ay, Tarix seç və ya Hamısı. Standart olaraq yalnız bu gün silinir.</li><li><b>İş günü:</b> Parametrlərdə "Yeni iş günü saat neçədə başlayır" (standart 06:00). Bu saata qədər olan satış, xərc və davamiyyət əvvəlki günə yazılır. Gecə 01:00-dakı satış "Bu gün" hesabatında görünür, səhər 06:00-dan sonra yeni gün başlayır.</li><li>Daha çox → Parametrlər, ya da Masalar ekranında çayxananın adına basın.</li>
   <li>Buradan çayxananın adını, aylıq hədəfi və görünüşü (açıq, tünd, avtomatik) dəyişirsiniz.</li></ul>`],
  ['Məlumatlar harada saxlanılır', `<ul><li>claude.ai linki ilə açanda məlumatlar onlayn saxlanılır. Telefonda və kompüterdə eyni linki açsanız, eyni məlumatları görürsünüz.</li>
   <li>HTML faylı kimi yükləyib açsanız, məlumatlar yalnız həmin brauzerdə qalır. Brauzeri təmizləsəniz, silinə bilər.</li>
@@ -2077,6 +2105,7 @@ document.addEventListener('input', e => { const el = e.target, k = el.dataset.in
   if (k === 'q') { S.q = el.value; render(); }
   if (k === 'nq') { S.nq = el.value; render(); }
   if (k === 'chq') { S.chq = el.value; render(); }
+  if (k === 'fq') { S.fq[el.dataset.k] = el.value; applyFilters(); }
   if (k === 'cpq') { const l = $('#cpList'); if (l) l.innerHTML = custList(el.value); }
   if (k === 'disc') { PAY.v = el.value; const { sub: sb, disc, total } = payCalc(S.tabs[S.open]);
     $('#pTot').textContent = money(total); $('#pSubL').textContent = disc ? 'Məbləğ ' + money(sb) + ', endirim ' + money(disc) : 'Ödəniləcək'; updCard(); updPaid(); }
