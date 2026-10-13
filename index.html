@@ -453,6 +453,8 @@ td,th{font-size:16px}
 .stbl td small{color:var(--muted);font-size:12px;margin-left:4px}
 .wdrow{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;margin-top:8px;font-size:15px}
 .wdrow i{display:block;height:10px;border-radius:5px;background:var(--green);min-width:2px}
+.fqchips{margin-top:8px}
+.fqchips .chip{min-height:36px;padding:6px 12px;font-size:15px}
 </style>
 </head>
 <body data-view="lock">
@@ -713,6 +715,23 @@ function bootView(){ let sv = null; try { sv = JSON.parse(localStorage.getItem('
 function saveView(){ try { localStorage.setItem('cayxor-view', JSON.stringify({ v: S.view, open: S.open, led: S.ledOpen, lk: S.ledKind, pane: S.pane, bt: S.bTab })); } catch(e){} }
 /* ---------- siyahılarda axtarış ---------- */
 const fbox = (key, ph) => `<input type="search" class="fq" id="fq_${key}" data-inp="fq" data-k="${key}" value="${esc(S.fq[key] || '')}" placeholder="🔍 ${ph}" autocomplete="off"><p class="hint flsum" style="display:none;margin:6px 2px 0"></p>`;
+const buyTxt = b => [b.name, b.type, b.supName, b.note, b.qty ? fq(b.qty) + ' ' + b.unit : '', r2(b.sum).toFixed(2), b.debt ? 'borca' : ''].filter(Boolean).join(' ').toLocaleLowerCase('az');
+function buyExtra(root, q){ const box = root.querySelector('.flx'); if (!box) return;
+  root.querySelectorAll('.fqchips .chip').forEach(c => c.classList.toggle('on', (S.fq.buy || '') === c.dataset.v));
+  if (!q || !S.buys) { box.innerHTML = ''; return; }
+  const L = S.buys.filter(S.buyFn || (() => true)).filter(b => buyTxt(b).includes(q)); if (!L.length) { box.innerHTML = ''; return; }
+  const r = period(S.buyP), tot = sum(L, b => b.sum), days = []; for (let d = r.from; d <= r.to; d = shiftDay(d, 1)) days.push(d);
+  const byDay = days.map(d => sum(L.filter(b => b.day === d), b => b.sum)), act = byDay.filter(v => v > 0).length, big = L.slice().sort((a, b) => b.sum - a.sum)[0];
+  const st = (k, v) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  let h = `<div class="stats" style="margin-top:12px">${st('Cəmi xərc', money(tot))}${st('Qeyd sayı', L.length)}${st('Bir qeydə orta', money(tot / L.length))}${st('Ən böyük', money(big.sum) + '<small style="display:block;font-size:13px;font-weight:400" class="muted">' + esc(dayLabel(big.day)) + '</small>')}</div>`;
+  if (days.length > 1) { const max = Math.max(1, ...byDay), W = Math.max(320, days.length * 20), Hh = 140, bw = W / days.length, step = days.length > 16 ? Math.ceil(days.length / 8) : 1;
+    h += `<div style="margin-top:12px"><b>Günlərə görə</b> <small class="muted">${act} gün xərc olub${act ? ', xərc olan günə orta ' + money(tot / act) : ''}</small><div class="chartw" style="margin-top:6px"><svg viewBox="0 0 ${W} ${Hh + 22}" style="width:100%;min-width:${Math.min(W, 640)}px;height:auto;display:block" role="img" aria-label="Günlərə görə xərc qrafiki">
+      <line x1="0" x2="${W}" y1="16" y2="16" stroke="var(--line)" stroke-dasharray="3 4"/><text x="2" y="13" font-size="11" fill="var(--muted)">${Math.round(max)} ₼</text>
+      ${byDay.map((v, i) => { const bh = v / max * (Hh - 16); return `<rect x="${i * bw + bw * 0.15}" y="${Hh - bh}" width="${bw * 0.7}" height="${v ? Math.max(bh, 2) : 0}" rx="3" fill="var(--brass)"><title>${dayLabel(days[i])}: ${money(v)}</title></rect>${i % step === 0 ? `<text x="${i * bw + bw / 2}" y="${Hh + 15}" font-size="11" text-anchor="middle" fill="var(--muted)">${+days[i].slice(8)}</text>` : ''}`; }).join('')}
+      <line x1="0" x2="${W}" y1="${Hh}" y2="${Hh}" stroke="var(--line)"/></svg></div></div>`; }
+  const g = {}; L.forEach(b => { g[b.name] = (g[b.name] || 0) + b.sum; }); const G = Object.entries(g).sort((a, b) => b[1] - a[1]), gm = G.length ? G[0][1] : 1;
+  if (G.length > 1) h += `<div style="margin-top:12px"><b>Nəyə görə</b>${G.slice(0, 8).map(([n, v]) => `<div class="wdrow" style="grid-template-columns:minmax(70px,34%) 1fr auto"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n)}</span><i style="width:${v / gm * 100}%;background:var(--brass)"></i><b>${money(v)}</b></div>`).join('')}</div>`;
+  box.innerHTML = h + '<div style="height:6px"></div>'; }
 function applyFilters(){ document.querySelectorAll('#app [data-fl]').forEach(root => {
   const q = (S.fq[root.dataset.fl] || '').trim().toLocaleLowerCase('az'), rows = [...root.querySelectorAll('.li, .cline')];
   const shown = r => r.style.display !== 'none'; let vis = 0, tot = 0;
@@ -722,6 +741,7 @@ function applyFilters(){ document.querySelectorAll('#app [data-fl]').forEach(roo
     while (n && !n.classList.contains('dayhd')) { if (n.matches('.li') && shown(n)) any = true; n = n.nextElementSibling; } hd.style.display = !q || any ? '' : 'none'; });
   root.querySelectorAll('.card').forEach(c => { const rs = [...c.querySelectorAll('.li, .cline')]; if (!rs.length) return;
     c.style.display = !q || rs.some(shown) ? '' : 'none'; const pv = c.previousElementSibling; if (pv && pv.classList.contains('sec')) pv.style.display = c.style.display; });
+  if (root.dataset.fl === 'buy') buyExtra(root, q);
   const fs = root.querySelector('.flsum'); if (fs) { fs.style.display = q ? '' : 'none'; fs.textContent = vis ? vis + ' qeyd tapıldı' + (tot && ['buy','log'].includes(root.dataset.fl) ? ', cəmi ' + money(tot) : '') : 'Axtarışa uyğun heç nə tapılmadı.'; } }); }
 function render(){ if (rq) return; rq = requestAnimationFrame(() => { rq = 0; draw(); }); }
 function draw(){
@@ -944,7 +964,7 @@ function vBuys(){
 function vBazar(){
   const items = allStock(), shopRefs = new Set(S.shop.map(x => x.ref).filter(Boolean)), sups = ledList('t');
   let h = `<div class="stack" style="margin-top:14px"><div class="card"><div class="row" style="justify-content:space-between"><h2 style="font-size:18px">Alınacaqlar</h2>
-    ${items.length ? '<button class="btn sm" data-act="shopPick">+ Siyahıya at</button>' : ''}</div>`;
+    <span class="row" style="gap:6px">${S.shop.length ? '<button class="btn warn sm" data-act="shopClear">Hamısını sil</button>' : ''}${items.length ? '<button class="btn sm" data-act="shopPick">+ Siyahıya at</button>' : ''}</span></div>`;
   h += S.shop.length ? S.shop.map(x => { const it = x.ref && items.find(y => y.ref === x.ref);
       return `<div class="li"><button class="tick" data-act="shopDone" data-id="${x.id}" aria-label="Seç və al"></button><div class="grow"><div>${esc(x.text)}${x.auto ? '<span class="tag low">az qalıb</span>' : ''}</div>${it ? `<small>anbarda ${fq(it.qty)} ${esc(it.unit)}${it.min ? ', minimum ' + fq(it.min) : ''}</small>` : ''}</div><button class="x" data-act="shopDel" data-id="${x.id}" aria-label="Sil">×</button></div>`; }).join('')
     : '<p class="muted" style="margin-bottom:0">Siyahı boşdur. Anbarda minimuma düşən mallar bura özü düşür.</p>';
@@ -982,8 +1002,12 @@ function vExp(){
   h += '<p class="hint">İşçilərə verilən pullar "Daha çox → İşçilər" bölməsində yazılır.</p>';
   return h + '</div>' + buyList(b => b.type !== 'Bazarlıq', 'Bu dövrdə xərc yazılmayıb.') + '</div>';
 }
-function buyList(fn, empty){
+function buyList(fn, empty){ S.buyFn = fn;
   let h = `<div class="card" data-fl="buy">${perChips('buy')}<div style="margin-top:10px">${fbox('buy', 'Axtar: ad, tədarükçü, qeyd, məbləğ')}</div>`;
+  if (S.buys) { const by = {}; S.buys.filter(fn).forEach(b => { by[b.name] = (by[b.name] || 0) + (+b.sum || 0); });
+    const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (top.length > 1) h += `<div class="chips fqchips">${top.map(([n]) => `<button class="chip ${(S.fq.buy || '') === n ? 'on' : ''}" data-act="fqSet" data-k="buy" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div>`; }
+  h += '<div class="flx"></div>';
   if (!S.buys) return h + '<p class="muted">Yüklənir…</p></div>';
   const list = S.buys.filter(fn);
   h += `<div style="margin-top:12px"><small>Cəmi</small><div style="font-size:26px;font-weight:600">${money(sum(list, b => b.sum))}</div></div>`;
@@ -1316,7 +1340,7 @@ const HELP = [
   <li>Kassadakı nağdı sayıb yazsanız, proqram nə qədər olmalı olduğunu hesablayır və fərqi (artıq və ya əskik) hesabata yazır.</li>
   <li>Parametrlərdə hesabatın hara gedəcəyini seçin: <b>Telegram</b> (avtomatik, dərhal), <b>WhatsApp</b> (hazır mesajla açılır, siz göndər basırsınız) və ya CallMeBot (avtomatik, amma gecikə bilər). Bağlayandan sonra WhatsApp düyməsi həmişə çıxır.</li>
   <li><b>Telegram botu qoşmaq:</b> Telegram-da @BotFather-ə /newbot yazın, ad verin, verdiyi açarı (token) Parametrlərə yapışdırın. Sonra öz botunuzu tapıb ona "salam" yazın, Parametrlərdə "Tap" basın, Chat ID özü dolacaq. "Test mesajı" ilə yoxlayın.</li></ul>`],
- ['Parametrlər və görünüş', `<ul><li><b>Axtarış:</b> Bazarlıq və xərclər, Ləğv jurnalı, Menyu, Anbar, Sayım və Tədarükçülər siyahılarının yuxarısında 🔍 axtarış xanası var. Ad, qeyd, masa və ya məbləğ yazın, uyğun qeydlər və cəmi görünür.</li><li><b>Səhifə yenilənəndə</b> proqram olduğunuz bölmədə qalır (masalara atmır).</li><li><b>Satış cədvəli:</b> Daha çox → Satış cədvəli. Seçilən dövr (standart: bu ay) üçün ümumi göstəricilər, gündəlik satış qrafiki, həftə günlərinə görə orta satış və gün-gün cədvəl: çek, satış, nağd, kart, nisyə, xərc, işçi, qalıq. Sətrə və ya sütuna basanda həmin günün tam hesabatı açılır. Cədvəli CSV kimi Excel-ə yükləmək olar.</li><li><b>Ləğv jurnalına əl ilə yazmaq:</b> Daha çox → Ləğv jurnalı → "+ Əlavə et". Masa və ya ad, məbləğ, tarix, növ və istəsəniz qeyd yazın. Belə qeydlər "əl ilə yazılıb" kimi görünür.</li><li><b>Dövr üzrə sıfırlama:</b> Satışlar, Bazarlıq və xərclər, Ləğv jurnalı və İşçilər sıfırlananda pəncərədə dövr seçilir: Bu gün, Dünən, Sırağagün, Bu həftə, Bu ay, Tarix seç və ya Hamısı. Standart olaraq yalnız bu gün silinir.</li><li><b>İş günü:</b> Parametrlərdə "Yeni iş günü saat neçədə başlayır" (standart 06:00). Bu saata qədər olan satış, xərc və davamiyyət əvvəlki günə yazılır. Gecə 01:00-dakı satış "Bu gün" hesabatında görünür, səhər 06:00-dan sonra yeni gün başlayır.</li><li>Daha çox → Parametrlər, ya da Masalar ekranında çayxananın adına basın.</li>
+ ['Parametrlər və görünüş', `<ul><li><b>Xərc axtarışı və qrafik:</b> Bazarlıq və ya Xərclər siyahısında yuxarıdan dövrü seçin (məs. Bu ay), sonra axtarışa yazın və ya hazır düymələrdən birinə (Qəlyan, İşıq…) basın. Altında cəmi, qeyd sayı, orta, ən böyük xərc, günlərə görə qrafik və "nəyə görə" bölgüsü çıxır.</li><li><b>Alınacaqlar:</b> "Hamısını sil" siyahını təmizləyir. Minimumdan az qalan mallar sonra yenidən özü düşür.</li><li><b>Axtarış:</b> Bazarlıq və xərclər, Ləğv jurnalı, Menyu, Anbar, Sayım və Tədarükçülər siyahılarının yuxarısında 🔍 axtarış xanası var. Ad, qeyd, masa və ya məbləğ yazın, uyğun qeydlər və cəmi görünür.</li><li><b>Səhifə yenilənəndə</b> proqram olduğunuz bölmədə qalır (masalara atmır).</li><li><b>Satış cədvəli:</b> Daha çox → Satış cədvəli. Seçilən dövr (standart: bu ay) üçün ümumi göstəricilər, gündəlik satış qrafiki, həftə günlərinə görə orta satış və gün-gün cədvəl: çek, satış, nağd, kart, nisyə, xərc, işçi, qalıq. Sətrə və ya sütuna basanda həmin günün tam hesabatı açılır. Cədvəli CSV kimi Excel-ə yükləmək olar.</li><li><b>Ləğv jurnalına əl ilə yazmaq:</b> Daha çox → Ləğv jurnalı → "+ Əlavə et". Masa və ya ad, məbləğ, tarix, növ və istəsəniz qeyd yazın. Belə qeydlər "əl ilə yazılıb" kimi görünür.</li><li><b>Dövr üzrə sıfırlama:</b> Satışlar, Bazarlıq və xərclər, Ləğv jurnalı və İşçilər sıfırlananda pəncərədə dövr seçilir: Bu gün, Dünən, Sırağagün, Bu həftə, Bu ay, Tarix seç və ya Hamısı. Standart olaraq yalnız bu gün silinir.</li><li><b>İş günü:</b> Parametrlərdə "Yeni iş günü saat neçədə başlayır" (standart 06:00). Bu saata qədər olan satış, xərc və davamiyyət əvvəlki günə yazılır. Gecə 01:00-dakı satış "Bu gün" hesabatında görünür, səhər 06:00-dan sonra yeni gün başlayır.</li><li>Daha çox → Parametrlər, ya da Masalar ekranında çayxananın adına basın.</li>
   <li>Buradan çayxananın adını, aylıq hədəfi və görünüşü (açıq, tünd, avtomatik) dəyişirsiniz.</li></ul>`],
  ['Məlumatlar harada saxlanılır', `<ul><li>claude.ai linki ilə açanda məlumatlar onlayn saxlanılır. Telefonda və kompüterdə eyni linki açsanız, eyni məlumatları görürsünüz.</li>
   <li>HTML faylı kimi yükləyib açsanız, məlumatlar yalnız həmin brauzerdə qalır. Brauzeri təmizləsəniz, silinə bilər.</li>
@@ -1934,6 +1958,8 @@ const ACT = {
   salesCsv: () => { const R0 = S.salesRows || []; const L = [['Tarix','Həftə günü','Çek','Satış','Nağd','Kart','Nisyə','Bazarlıq+xərc','İşçilərə','Qalıq'].join(';')];
     R0.forEach(x => L.push([x.d, WDS[wdOf(x.d)], x.n, ...[x.tot, x.nagd, x.kart, x.nis, x.xerc, x.isci, x.net].map(v => r2(v).toFixed(2).replace('.', ','))].join(';')));
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + L.join('\n')], { type: 'text/csv;charset=utf-8' })); a.download = 'satis-' + S.salesData.r.from + '_' + S.salesData.r.to + '.csv'; a.click(); },
+  shopClear: () => confirmBox('Alınacaqlar siyahısındakı ' + S.shop.length + ' qeydin hamısı silinsin? Anbarda minimumdan az qalan mallar növbəti dəyişiklikdə yenidən siyahıya düşəcək.', 'Hamısını sil', () => { S.shop = []; saveShop(); render(); toast('Alınacaqlar siyahısı təmizləndi'); }),
+  fqSet: el => { const k = el.dataset.k; S.fq[k] = S.fq[k] === el.dataset.v ? '' : el.dataset.v; const i = document.getElementById('fq_' + k); if (i) i.value = S.fq[k]; applyFilters(); },
   shiftView: async el => { const f = +el.dataset.f, t = +el.dataset.t; modal('<h2>Növbə hesabatı</h2><p class="muted">Hazırlanır…</p>');
     const RP = await rangeRP(f, t); let text = eodText(RP, (el.dataset.id ? 'Növbə: ' : 'Bağlanmamış gün: ') + fmtTs(f) + ' – ' + fmtTs(t));
     if (el.dataset.id) { const doc = S.shiftData.days.find(d => d.day === el.dataset.day), x = doc && doc.shifts && doc.shifts[el.dataset.id];
