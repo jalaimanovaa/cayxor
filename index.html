@@ -439,6 +439,20 @@ td,th{font-size:16px}
 .btot{margin-top:12px;font-weight:600;font-size:18px;text-align:right}
 .btn{white-space:normal;text-align:center}
 .shopen{border-color:var(--green)}
+.chartw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tblw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.stbl{border-collapse:collapse;width:100%;min-width:640px;font-variant-numeric:tabular-nums}
+.stbl th,.stbl td{padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}
+.stbl th{font-size:13px;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--surface)}
+.stbl .r{text-align:right}
+.stbl td:first-child,.stbl th:first-child{position:sticky;left:0;background:var(--surface);z-index:1}
+.stbl tbody tr{cursor:pointer}
+.stbl tr.z td{color:var(--muted)}
+.stbl tr.best td:first-child{box-shadow:inset 3px 0 0 var(--brass)}
+.stbl tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
+.stbl td small{color:var(--muted);font-size:12px;margin-left:4px}
+.wdrow{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;margin-top:8px;font-size:15px}
+.wdrow i{display:block;height:10px;border-radius:5px;background:var(--green);min-width:2px}
 </style>
 </head>
 <body data-view="lock">
@@ -578,7 +592,7 @@ const S = window.S = {
   buyP: { k: 'today' }, buys: null, bTab: 'buy', bSel: '', bQty: '', bSum: '', bSumAuto: true, bDate: '', bSup: '', bDebt: false,
   xSel: '', xSum: '', xNote: '', xDate: '',
   repP: { k: 'today' }, rep: null, cmp: null, openChk: null, dl: null,
-  shiftP: { k: 'week' }, shiftData: null, openShift: null, logP: { k: 'today' }, logs: null, logKind: '',
+  salesP: { k: 'month' }, salesData: null, shiftP: { k: 'week' }, shiftData: null, openShift: null, logP: { k: 'today' }, logs: null, logKind: '',
   stDay: dayStr(), stData: null, stMonth: null,
   ledOpen: null, ledKind: 'm', nq: '', draft: null, pd: null
 };
@@ -675,6 +689,7 @@ const IC = {
   sup: svg('<path d="M2.5 6.5h11v10h-11zM13.5 10h4l3 3.2v3.3h-7"/><circle cx="6.5" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>'),
   log: svg('<path d="M6 3.5h12v17H6z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
   help: svg('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8M12 17.2v.3"/>'),
+  sales: svg('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
   shifts: svg('<path d="M4 6h16M4 12h16M4 18h10"/><path d="M19.5 15.5a3 3 0 1 1-2.6 4.5 2.4 2.4 0 0 0 2.6-4.5Z"/>'),
   shiftAsk: svg('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>'),
   eodToday: svg('<path d="M4 5.5h16v10H9l-5 4v-14Z"/><path d="M8 9.5h8M8 12.5h5"/>'),
@@ -684,7 +699,7 @@ const GL = '<path class="tea" d="M9.2 15h3.6c.4 2.6 5.8 4 5.8 8.6 0 2.4-2.8 3.4-
 const glass = () => `<svg class="gl" viewBox="0 0 22 32" aria-hidden="true">${GL}</svg>`;
 
 /* ---------- render ---------- */
-const MORE_SUB = ['products','stock','staff','sup','log','help','count','shifts'];
+const MORE_SUB = ['products','stock','staff','sup','log','help','count','shifts','sales'];
 const WORKER_VIEWS = ['tables','tab','nisye','led'];
 let rq = 0;
 function render(){ if (rq) return; rq = requestAnimationFrame(() => { rq = 0; draw(); }); }
@@ -710,7 +725,7 @@ function draw(){
   const items = isAdmin() ? [['tables','Masalar'],['nisye','Nisyə'],['buys','Bazarlıq'],['rep','Hesabat'],['more','Daha çox']] : [['tables','Masalar'],['nisye','Nisyə']];
   const nk = S.view === 'tab' ? 'tables' : MORE_SUB.includes(S.view) ? 'more' : S.view === 'led' ? (S.ledKind === 't' ? 'more' : 'nisye') : S.view;
   $('#nav').innerHTML = `<div class="in" style="grid-template-columns:repeat(${items.length},1fr)">` + items.map(([k, l]) => `<button class="${nk === k ? 'on' : ''}" data-act="go" data-v="${k}">${IC[k]}${l}</button>`).join('') + '</div>';
-  const V = { shifts: vShifts, count: vCount, help: vHelp, tab: vTab, nisye: vNisye, led: vLed, buys: vBuys, rep: vRep, more: vMore, products: vProducts, stock: vStock, staff: vStaff, sup: vSup, log: vLog };
+  const V = { sales: vSales, shifts: vShifts, count: vCount, help: vHelp, tab: vTab, nisye: vNisye, led: vLed, buys: vBuys, rep: vRep, more: vMore, products: vProducts, stock: vStock, staff: vStaff, sup: vSup, log: vLog };
   $('#app').innerHTML = (V[S.view] || vTables)() + resetFor(S.view);
   restore();
 }
@@ -737,6 +752,7 @@ function topBar(){
     case 'staff': return `${backBtn('more','Geri')}<h1>İşçilər</h1><button class="btn pri sm" data-act="staffForm">+ İşçi</button>`;
     case 'sup': return `${backBtn('more','Geri')}<h1>Tədarükçülər</h1><button class="btn pri sm" data-act="ledForm" data-k="t">+ Yeni</button>`;
     case 'log': return `${backBtn('more','Geri')}<h1>Ləğv jurnalı</h1><button class="btn pri sm" data-act="logAddForm">+ Əlavə et</button>`;
+    case 'sales': return `${backBtn('more','Geri')}<h1>Satış cədvəli</h1>`;
     case 'shifts': return `${backBtn('more','Geri')}<h1>Növbələr</h1><button class="btn pri sm" data-act="shiftAsk">🌙 Bağla</button>`;
     case 'help': return `${backBtn('more','Geri')}<h1>Təlimat</h1>`;
   }
@@ -960,7 +976,7 @@ function buyList(fn, empty){
 
 /* ---------- more ---------- */
 function vMore(){
-  return '<div class="tiles">' + [['shiftAsk','Növbəni bağla','Hesabatı WhatsApp-a göndər'],['shifts','Növbələr','Bağlanan və bağlanmayan bütün növbələr'],['eodToday','Gün sonu','Bugünkü hesabat, təqvim günü üzrə'],['products','Menyu və setlər','Qiymətlər, çay setləri, reseptlər'],['stock','Anbar','Mallar, sayım, minimum'],['staff','İşçilər','Davamiyyət, verilən pullar, kodlar'],
+  return '<div class="tiles">' + [['shiftAsk','Növbəni bağla','Hesabatı WhatsApp-a göndər'],['sales','Satış cədvəli','Gün-gün satış, qrafik, ümumi hesabat'],['shifts','Növbələr','Bağlanan və bağlanmayan bütün növbələr'],['eodToday','Gün sonu','Bugünkü hesabat, təqvim günü üzrə'],['products','Menyu və setlər','Qiymətlər, çay setləri, reseptlər'],['stock','Anbar','Mallar, sayım, minimum'],['staff','İşçilər','Davamiyyət, verilən pullar, kodlar'],
     ['sup','Tədarükçülər','Kimdən alırıq, borcumuz'],['log','Ləğv jurnalı','Silinən və azaldılan sifarişlər'],['settings','Parametrlər','Ad, aylıq hədəf, görünüş'],['help','Təlimat','Proqramdan necə istifadə etməli']]
     .map(([k, l, d]) => `<button data-act="${['settings','eodToday','shiftAsk'].includes(k) ? k : 'go'}" data-v="${k}">${IC[k]}<b>${l}</b><small>${d}</small></button>`).join('') + '</div>'; }
 
@@ -1272,7 +1288,7 @@ const HELP = [
   <li>Kassadakı nağdı sayıb yazsanız, proqram nə qədər olmalı olduğunu hesablayır və fərqi (artıq və ya əskik) hesabata yazır.</li>
   <li>Parametrlərdə hesabatın hara gedəcəyini seçin: <b>Telegram</b> (avtomatik, dərhal), <b>WhatsApp</b> (hazır mesajla açılır, siz göndər basırsınız) və ya CallMeBot (avtomatik, amma gecikə bilər). Bağlayandan sonra WhatsApp düyməsi həmişə çıxır.</li>
   <li><b>Telegram botu qoşmaq:</b> Telegram-da @BotFather-ə /newbot yazın, ad verin, verdiyi açarı (token) Parametrlərə yapışdırın. Sonra öz botunuzu tapıb ona "salam" yazın, Parametrlərdə "Tap" basın, Chat ID özü dolacaq. "Test mesajı" ilə yoxlayın.</li></ul>`],
- ['Parametrlər və görünüş', `<ul><li><b>Ləğv jurnalına əl ilə yazmaq:</b> Daha çox → Ləğv jurnalı → "+ Əlavə et". Masa və ya ad, məbləğ, tarix, növ və istəsəniz qeyd yazın. Belə qeydlər "əl ilə yazılıb" kimi görünür.</li><li><b>Dövr üzrə sıfırlama:</b> Satışlar, Bazarlıq və xərclər, Ləğv jurnalı və İşçilər sıfırlananda pəncərədə dövr seçilir: Bu gün, Dünən, Sırağagün, Bu həftə, Bu ay, Tarix seç və ya Hamısı. Standart olaraq yalnız bu gün silinir.</li><li><b>İş günü:</b> Parametrlərdə "Yeni iş günü saat neçədə başlayır" (standart 06:00). Bu saata qədər olan satış, xərc və davamiyyət əvvəlki günə yazılır. Gecə 01:00-dakı satış "Bu gün" hesabatında görünür, səhər 06:00-dan sonra yeni gün başlayır.</li><li>Daha çox → Parametrlər, ya da Masalar ekranında çayxananın adına basın.</li>
+ ['Parametrlər və görünüş', `<ul><li><b>Satış cədvəli:</b> Daha çox → Satış cədvəli. Seçilən dövr (standart: bu ay) üçün ümumi göstəricilər, gündəlik satış qrafiki, həftə günlərinə görə orta satış və gün-gün cədvəl: çek, satış, nağd, kart, nisyə, xərc, işçi, qalıq. Sətrə və ya sütuna basanda həmin günün tam hesabatı açılır. Cədvəli CSV kimi Excel-ə yükləmək olar.</li><li><b>Ləğv jurnalına əl ilə yazmaq:</b> Daha çox → Ləğv jurnalı → "+ Əlavə et". Masa və ya ad, məbləğ, tarix, növ və istəsəniz qeyd yazın. Belə qeydlər "əl ilə yazılıb" kimi görünür.</li><li><b>Dövr üzrə sıfırlama:</b> Satışlar, Bazarlıq və xərclər, Ləğv jurnalı və İşçilər sıfırlananda pəncərədə dövr seçilir: Bu gün, Dünən, Sırağagün, Bu həftə, Bu ay, Tarix seç və ya Hamısı. Standart olaraq yalnız bu gün silinir.</li><li><b>İş günü:</b> Parametrlərdə "Yeni iş günü saat neçədə başlayır" (standart 06:00). Bu saata qədər olan satış, xərc və davamiyyət əvvəlki günə yazılır. Gecə 01:00-dakı satış "Bu gün" hesabatında görünür, səhər 06:00-dan sonra yeni gün başlayır.</li><li>Daha çox → Parametrlər, ya da Masalar ekranında çayxananın adına basın.</li>
   <li>Buradan çayxananın adını, aylıq hədəfi və görünüşü (açıq, tünd, avtomatik) dəyişirsiniz.</li></ul>`],
  ['Məlumatlar harada saxlanılır', `<ul><li>claude.ai linki ilə açanda məlumatlar onlayn saxlanılır. Telefonda və kompüterdə eyni linki açsanız, eyni məlumatları görürsünüz.</li>
   <li>HTML faylı kimi yükləyib açsanız, məlumatlar yalnız həmin brauzerdə qalır. Brauzeri təmizləsəniz, silinə bilər.</li>
@@ -1296,6 +1312,48 @@ async function rangeRP(from, to){ const fd = bizOf(from), td = bizOf(to);
   const inR = x => { const t = x.closedAt || x.at || 0; return t > from && t <= to; };
   return { from, to, days: D.days, checks: D.checks.filter(inR), logs: D.logs.filter(inR), pays: D.pays.filter(inR), inc: D.inc.filter(inR), own: D.own.filter(inR),
     buys: b.filter(x => x.at ? inR(x) : x.day >= fd && x.day <= td), r: { from: fd, to: td } }; }
+/* ---------- satış cədvəli: gün-gün ---------- */
+async function loadSales(){ S.salesData = null; render(); const r = period(S.salesP);
+  const [D, b] = await Promise.all([loadDays(r.from, r.to), Store.range('buys', 'day', r.from, r.to)]);
+  S.salesData = { ...D, buys: b, r }; render(); }
+const WDS = ['Bazar','B.e.','Ç.a.','Çər.','C.a.','Cümə','Şən.'];
+const wdOf = ds => { const [y, m, d] = ds.split('-').map(Number); return new Date(y, m - 1, d).getDay(); };
+function vSales(){
+  const st = (k, v, cls = '') => `<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  let h = `<div style="margin-top:14px">${perChips('sales')}</div>`;
+  const D = S.salesData; if (!D) return h + '<div class="loading">Yüklənir…</div>';
+  const r = D.r, days = []; for (let d = r.from; d <= r.to; d = shiftDay(d, 1)) days.push(d);
+  const by = (arr, d) => arr.filter(x => x.day === d);
+  const rows = days.map(d => { const o = repCalc({ checks: by(D.checks, d), buys: by(D.buys, d), pays: by(D.pays, d), inc: by(D.inc, d), logs: by(D.logs, d), own: by(D.own, d) }), k = kassaParts(o);
+    return { d, n: o.n, tot: o.tot, nagd: k.nagd, kart: k.kart, nis: k.nis, xerc: o.bz + o.ex, isci: o.sp, net: o.net }; });
+  const T = rows.reduce((a, x) => { for (const f of ['n','tot','nagd','kart','nis','xerc','isci','net']) a[f] = (a[f] || 0) + x[f]; return a; }, {});
+  const worked = rows.filter(x => x.n > 0), best = worked.slice().sort((a, b) => b.tot - a.tot)[0], worst = worked.slice().sort((a, b) => a.tot - b.tot)[0];
+  // ümumi göstəricilər
+  h += `<div class="stats" style="margin-top:14px">${st('Satış', money(T.tot), 'big')}${st('Çek sayı', T.n || 0)}${st('Günlük orta', money(worked.length ? T.tot / worked.length : 0))}
+    ${st('Qalıq', money(T.net), T.net < 0 ? 'neg' : '')}${st('Nağd / Kart', money(T.nagd) + ' / ' + money(T.kart))}${st('Nisyə', money(T.nis))}
+    ${st('Bazarlıq + xərc', money(T.xerc))}${st('İşçilərə', money(T.isci))}</div>`;
+  if (best) h += `<p class="hint" style="margin-top:8px">🏆 Ən yaxşı gün: <b>${dayLabel(best.d)}</b> — ${money(best.tot)}${worst && worst !== best ? ` · Ən zəif: ${dayLabel(worst.d)} — ${money(worst.tot)}` : ''} · İşlənmiş gün: ${worked.length}</p>`;
+  // qrafik
+  if (days.length > 1) { const max = Math.max(1, ...rows.map(x => x.tot)), W = Math.max(320, days.length * 22), Hh = 170, bw = W / days.length, step = days.length > 16 ? Math.ceil(days.length / 8) : 1;
+    h += `<div class="card" style="margin-top:12px;padding:12px 10px"><b style="display:block;margin:0 4px 6px">Gündəlik satış</b><div class="chartw"><svg viewBox="0 0 ${W} ${Hh + 24}" style="width:100%;min-width:${Math.min(W, 640)}px;height:auto;display:block" role="img" aria-label="Gündəlik satış qrafiki">
+      ${[0.5, 1].map(f => `<line x1="0" x2="${W}" y1="${Hh - f * (Hh - 16)}" y2="${Hh - f * (Hh - 16)}" stroke="var(--line)" stroke-dasharray="3 4"/><text x="2" y="${Hh - f * (Hh - 16) - 3}" font-size="11" fill="var(--muted)">${Math.round(max * f)}</text>`).join('')}
+      ${rows.map((x, i) => { const bh = x.tot / max * (Hh - 16), bx = i * bw + bw * 0.15;
+        return `<g data-act="salesDay" data-d="${x.d}" style="cursor:pointer"><rect x="${i * bw}" y="0" width="${bw}" height="${Hh + 24}" fill="transparent"/><rect x="${bx}" y="${Hh - bh}" width="${bw * 0.7}" height="${Math.max(bh, x.tot ? 2 : 0)}" rx="3" fill="${best && x.d === best.d ? 'var(--brass)' : 'var(--green)'}"><title>${dayLabel(x.d)}: ${money(x.tot)}</title></rect>
+          ${i % step === 0 ? `<text x="${i * bw + bw / 2}" y="${Hh + 16}" font-size="11" text-anchor="middle" fill="var(--muted)">${+x.d.slice(8)}</text>` : ''}</g>`; }).join('')}
+      <line x1="0" x2="${W}" y1="${Hh}" y2="${Hh}" stroke="var(--line)"/></svg></div><p class="hint" style="margin:6px 4px 0">Sütuna basanda həmin günün hesabatı açılır.</p></div>`;
+    // həftə günləri
+    const wd = [1,2,3,4,5,6,0].map(w => { const L = worked.filter(x => wdOf(x.d) === w); return { w, avg: L.length ? sum(L, x => x.tot) / L.length : 0, n: L.length }; }), wmax = Math.max(1, ...wd.map(x => x.avg));
+    if (worked.length >= 7) h += `<div class="card" style="margin-top:12px"><b>Həftə günlərinə görə orta satış</b>${wd.map(x => `<div class="wdrow"><span>${WDS[x.w]}</span><i style="width:${x.avg / wmax * 100}%"></i><b>${money(x.avg)}</b></div>`).join('')}</div>`; }
+  // cədvəl
+  const c = v => v ? r2(v).toFixed(2) : '—';
+  h += `<div class="sec">Gün-gün</div><div class="card tblw" style="padding:0"><table class="stbl"><thead><tr><th>Gün</th><th class="r">Çek</th><th class="r">Satış</th><th class="r">Nağd</th><th class="r">Kart</th><th class="r">Nisyə</th><th class="r">Xərc</th><th class="r">İşçi</th><th class="r">Qalıq</th></tr></thead><tbody>
+    ${rows.slice().reverse().map(x => `<tr data-act="salesDay" data-d="${x.d}" class="${x.n ? '' : 'z'} ${best && x.d === best.d ? 'best' : ''}"><td>${+x.d.slice(8)} ${MONTHS[+x.d.slice(5, 7) - 1].slice(0, 3)} <small>${WDS[wdOf(x.d)]}</small></td><td class="r">${x.n || '—'}</td><td class="r"><b>${c(x.tot)}</b></td><td class="r">${c(x.nagd)}</td><td class="r">${c(x.kart)}</td><td class="r">${c(x.nis)}</td><td class="r">${c(x.xerc)}</td><td class="r">${c(x.isci)}</td><td class="r ${x.net < 0 ? 'debt' : ''}">${c(x.net)}</td></tr>`).join('')}
+    </tbody><tfoot><tr><td>Cəmi</td><td class="r">${T.n || 0}</td><td class="r">${c(T.tot)}</td><td class="r">${c(T.nagd)}</td><td class="r">${c(T.kart)}</td><td class="r">${c(T.nis)}</td><td class="r">${c(T.xerc)}</td><td class="r">${c(T.isci)}</td><td class="r">${c(T.net)}</td></tr></tfoot></table></div>
+    <p class="hint">Qalıq = satış + bəxşiş − bazarlıq − xərc − işçilərə verilən. Sətrə basanda həmin günün tam hesabatı açılır. Cədvəl yana sürüşür.</p>
+    <button class="btn ghost sm" style="width:100%;margin-bottom:16px" data-act="salesCsv">⬇ Excel üçün yüklə (CSV)</button>`;
+  S.salesRows = rows; return h;
+}
+
 async function loadShifts(){ S.shiftData = null; S.openShift = null; render(); const r = period(S.shiftP);
   const [D, O] = await Promise.all([loadDays(r.from, r.to), loadShift()]); S.shiftData = { ...D, r }; S.openShift = O; render(); }
 function vShifts(){
@@ -1529,7 +1587,7 @@ const ACT = {
     const u = staffById(S.me.id); u.pin = pinHash(a, u.id); saveStaff(); closeModal(); toast('Kod dəyişdi'); },
 
   go: el => { const v = el.dataset.v; closeModal(); S.view = v; S.edit = false; window.scrollTo(0, 0);
-    if (v === 'buys') loadBuys(); if (v === 'rep') { loadRep(); loadCmp(); } if (v === 'log') loadLogs(); if (v === 'shifts') loadShifts(); if (v === 'staff') { S.stDay = dayStr(); loadStaff(); } render(); },
+    if (v === 'buys') loadBuys(); if (v === 'rep') { loadRep(); loadCmp(); } if (v === 'log') loadLogs(); if (v === 'shifts') loadShifts(); if (v === 'sales') loadSales(); if (v === 'staff') { S.stDay = dayStr(); loadStaff(); } render(); },
   back: () => { S.view = 'tables'; S.open = null; S.q = ''; render(); },
   toggleEdit: () => { S.edit = !S.edit; render(); },
   zone: el => { S.zone = el.dataset.z; render(); },
@@ -1844,6 +1902,10 @@ const ACT = {
       <div class="acts" style="margin-top:10px"><button class="btn" data-act="copyEod">Kopyala</button>${navigator.share ? '<button class="btn" data-act="shareEod">Paylaş</button>' : ''}</div>
       ${S.settings.wa ? '' : '<p class="hint">Hesabatın həmişə eyni nömrəyə getməsi üçün Parametrlərdə WhatsApp nömrəsini yazın.</p>'}
       <button class="btn ghost" style="width:100%;margin-top:10px" data-act="mClose">Bağla</button>`); },
+  salesDay: el => { const d = el.dataset.d; S.repP = { k: 'custom', from: d, to: d }; S.view = 'rep'; window.scrollTo(0, 0); loadRep(); loadCmp(); render(); },
+  salesCsv: () => { const R0 = S.salesRows || []; const L = [['Tarix','Həftə günü','Çek','Satış','Nağd','Kart','Nisyə','Bazarlıq+xərc','İşçilərə','Qalıq'].join(';')];
+    R0.forEach(x => L.push([x.d, WDS[wdOf(x.d)], x.n, ...[x.tot, x.nagd, x.kart, x.nis, x.xerc, x.isci, x.net].map(v => r2(v).toFixed(2).replace('.', ','))].join(';')));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + L.join('\n')], { type: 'text/csv;charset=utf-8' })); a.download = 'satis-' + S.salesData.r.from + '_' + S.salesData.r.to + '.csv'; a.click(); },
   shiftView: async el => { const f = +el.dataset.f, t = +el.dataset.t; modal('<h2>Növbə hesabatı</h2><p class="muted">Hazırlanır…</p>');
     const RP = await rangeRP(f, t); let text = eodText(RP, (el.dataset.id ? 'Növbə: ' : 'Bağlanmamış gün: ') + fmtTs(f) + ' – ' + fmtTs(t));
     if (el.dataset.id) { const doc = S.shiftData.days.find(d => d.day === el.dataset.day), x = doc && doc.shifts && doc.shifts[el.dataset.id];
@@ -2006,7 +2068,7 @@ async function finishPay(kind, cust, btn){
   if (cust) Store.merge('ledgers/' + cust.id, { e: { [id]: { type: 'borc', amount: nisAmt, note: (tab.label || t.name) + ' hesabı' + (nisAmt < total ? ' (' + money(total) + ', ' + money(total - nisAmt) + ' ödənildi)' : ''), at: now, by: S.me.name } } });
   closeModal(); S.view = 'tables'; S.open = null; S.q = ''; render(); toast(t.name + ' bağlandı: ' + money(total) + ' ' + (kind === 'qarışıq' ? '(nağd ' + money(sale.cash) + ', kart ' + money(sale.card) + ')' : kind === 'nisyə' && nisAmt < total ? '(' + money(total - nisAmt) + ' ödənildi, ' + money(nisAmt) + ' nisyə)' : kind) + (cust ? ' (' + cust.name + ')' : ''));
 }
-function reloadKey(k){ if (k === 'shift') loadShifts(); else if (k === 'buy') loadBuys(); else if (k === 'rep') loadRep(); else if (k === 'log') loadLogs(); render(); }
+function reloadKey(k){ if (k === 'sales') loadSales(); else if (k === 'shift') loadShifts(); else if (k === 'buy') loadBuys(); else if (k === 'rep') loadRep(); else if (k === 'log') loadLogs(); render(); }
 async function loadBuys(){ S.buys = null; render(); const r = period(S.buyP); S.buys = await Store.range('buys', 'day', r.from, r.to); render(); }
 
 /* ---------- events ---------- */
