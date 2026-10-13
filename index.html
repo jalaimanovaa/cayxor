@@ -463,6 +463,9 @@ input,textarea,select{font-size:max(16px,1em)}
 .stat3 .stat{padding:10px;min-width:0}
 .stat3 .stat .v{font-size:clamp(15px,4.4vw,22px);white-space:nowrap}
 .stat3 .stat .k{font-size:13px}
+.help mark{background:var(--brass);color:#fff;border-radius:3px;padding:0 2px}
+.help details{scroll-margin-top:80px}
+.hquick .chip{min-height:38px;font-size:15px}
 </style>
 </head>
 <body data-view="lock">
@@ -777,7 +780,7 @@ function draw(){
   $('#nav').innerHTML = `<div class="in" style="grid-template-columns:repeat(${items.length},1fr)">` + items.map(([k, l]) => `<button class="${nk === k ? 'on' : ''}" data-act="go" data-v="${k}">${IC[k]}${l}</button>`).join('') + '</div>';
   const V = { sales: vSales, shifts: vShifts, count: vCount, help: vHelp, tab: vTab, nisye: vNisye, led: vLed, buys: vBuys, rep: vRep, more: vMore, products: vProducts, stock: vStock, staff: vStaff, sup: vSup, log: vLog };
   $('#app').innerHTML = (V[S.view] || vTables)() + resetFor(S.view);
-  restore(); applyFilters();
+  restore(); applyFilters(); helpFilter();
 }
 const meChip = () => `<button class="mechip" data-act="meMenu" aria-label="Hesab">${esc(S.me.name)}</button>`;
 const backBtn = (v, l) => `<button class="btn ghost sm" data-act="go" data-v="${v}" aria-label="${l}">‹<span class="bl"> ${l}</span></button>`;
@@ -1256,113 +1259,134 @@ function eodText(RP = S.rep, label){ const o = repCalc(RP), r = RP.r, L = [];
 
 /* ---------- help ---------- */
 const HELP = [
- ['Başlanğıc: ilk dəfə nə etməli', `<p>Proqramı qurmaq üçün bu ardıcıllıqla gedin. Hər addım bir neçə dəqiqə çəkir.</p><ol>
-  <li><b>Masaları yaradın.</b> Masalar ekranında "10 masa yarat" basın. Sonra "Düzəlt" ilə adları öz masalarınıza uyğun dəyişin.</li>
-  <li><b>Menyunu doldurun.</b> Daha çox → Menyu və setlər → "Nümunə menyunu əlavə et". Sonra hər məhsulun ✎ düyməsi ilə qiyməti düzəldin, lazımsızları silin, çatışmayanları "+ Məhsul" ilə əlavə edin.</li>
-  <li><b>Anbara malları yazın.</b> Daha çox → Anbar. Qara çay, qənd, şəkər tozu, limon, kömür kimi malları vahidi (kq, ədəd, qutu) və minimumu ilə əlavə edin.</li>
-  <li><b>Reseptləri yazın.</b> Menyuda çay kimi məhsulların ✎ düyməsinə basıb bir ədəd satılanda anbardan nə qədər çıxdığını yazın. Məsələn, kiçik çaynik: 10 qr qara çay, 30 qr qənd.</li>
-  <li><b>Çay setlərini qurun.</b> Menyuda "+ Set" basın, tərkibə məhsulları düymə ilə əlavə edin, set qiymətini yazın.</li>
-  <li><b>İşçiləri əlavə edin.</b> Daha çox → İşçilər → "+ İşçi". Adını və gündəlik maaşını yazın.</li>
-  <li><b>Tədarükçüləri əlavə edin</b> (istəyə bağlı). Daha çox → Tədarükçülər. Kimdən mal alırsınızsa, onu yazın.</li></ol>`],
- ['Giriş kodu və kilid', `<p>Proqrama yalnız sahib 4 rəqəmli kodla girir. İşçilər proqrama girmir.</p><ul>
-  <li><b>Kilidləmək:</b> yuxarıda adınıza basın və "Kilidlə" seçin. Proqram yenidən kod istəyəcək. Telefonu kiməsə verəndə bunu edin.</li>
-  <li><b>Kodu dəyişmək:</b> adınıza basın, "Kodumu dəyiş" seçin, yeni kodu iki dəfə yazın.</li>
-  <li>5 dəfə səhv kod yığılsa, proqram 30 saniyə gözlədir.</li>
-  <li>Eyni cihazda proqramı bağlayıb açanda yenidən kod istəmir. Kilidləsəniz, istəyir.</li></ul>`],
- ['Masalar', `<ul><li><b>Boş masa</b> ağ, <b>dolu masa</b> sarı rəngdədir. Dolu masanın üstündə məbləğ, neçə dəqiqədir oturulduğu və neçə məhsul verildiyi yazılır.</li>
-  <li>Yuxarıda neçə masanın dolu olduğu və açıq hesabların cəmi görünür.</li>
-  <li><b>Masanı düzəltmək:</b> "Düzəlt" düyməsini basın. Masanın adına basıb adını və yerini (Zal, Həyət, Eyvan) dəyişin. ‹ və › ilə sırasını dəyişin. "Sil" ilə silin. Dolu masa silinmir. Bitəndə "Hazırdır" basın.</li>
-  <li>Masalara yer yazsanız, yuxarıda yerlərə görə filtr çıxır.</li>
-  <li><b>Müvəqqəti ad:</b> masanı açın və yuxarıdakı adına (✎) basın, məsələn müştərinin adını yazın. Hesab bağlananda ad silinir, masa öz adına qayıdır. Daimi adı dəyişmək üçün həmin pəncərədə "Masanın daimi adını dəyiş" basın.</li></ul>`],
- ['Bizim masa', `<p>Masaların ən aşağısında "Bizim masa" var. Özünüz, işçilər və ya pulsuz qonaq üçün götürülənləri bura yazın.</p><ul>
-  <li>Adi masa kimi açılır, məhsullar eyni qaydada vurulur.</li><li>Sonda "Özümüzə yaz" basın, kimin götürdüyünü seçin, istəsəniz qeyd yazın.</li>
-  <li>Bu satış sayılmır, kassaya pul kimi düşmür. Amma anbardan çıxılır, beləcə anbar düz qalır.</li>
-  <li>Hesabatda "Bizim masa" ayrıca göstərilir: menyu qiyməti ilə nə qədər olduğu və maya dəyəri.</li></ul>`],
- ['Sifariş vermək', `<ul><li>Masaya basın, sonra məhsula basın. Hər basışda sifarişə 1 ədəd düşür. Məhsulun küncündə neçə dəfə vurulduğu görünür.</li>
-  <li>Yuxarıda axtarış və kateqoriyalar var: Çay, Şirniyyat, Setlər və s. "Hamısı" seçiləndə ən yuxarıda son 30 gündə ən çox satılan 8 məhsul görünür.</li>
-  <li><b>Menyuda olmayan məhsul:</b> məhsulların ən aşağısındakı "+ Menyuda olmayan məhsul" düyməsinə basın, ad və qiymət yazın. Mal yalnız bu sifarişə düşür. "Menyuya da əlavə et" işarələsəniz, növbəti dəfə menyuda düymə kimi çıxacaq. Axtarışda tapılmayan adı yazıb bu düyməyə bassanız, ad özü dolur.</li>
-  <li><b>Telefonda</b> ekranın yuxarısında "Menyu" və "Sifariş" düymələri var. "Sifariş" basanda vurulanların siyahısı açılır. Aşağıdakı cəmi məbləğə basanda da sifariş açılır.</li>
-  <li>Sifarişdə − və + ilə sayı dəyişin. <b>Diqqət:</b> hər − basışı ləğv jurnalına yazılır.</li>
-  <li><b>Köçür:</b> müştəri başqa masaya keçəndə sifarişi ora köçürün. Dolu masaya köçürsəniz, iki sifariş birləşir.</li>
-  <li><b>••• düyməsi:</b> masaya qeyd yazmaq (məsələn "4 nəfər") və səhv açılmış masanı ödənişsiz boşaltmaq üçündür. Boşaltma da jurnala düşür.</li></ul>`],
- ['Hesabı bağlamaq və ödəniş', `<ul><li>"Hesabı bağla" basın. Endirim vermək istəyirsinizsə, məbləğ (₼) və ya faiz (%) yazın. Endirim də jurnala düşür.</li>
-  <li><b>Nağd</b> və ya <b>Kart</b>: bir basışla hesab bağlanır.</li>
-  <li><b>Keçmiş günə yazmaq:</b> hesabı bağlayanda "Hansı günə yazılsın" hissəsində Dünən, Sırağagün seçin və ya tarix seçin. Belə çeklər hesabatda "sonradan yazılıb" kimi görünür və jurnala düşür.</li>
-  <li><b>Karta artıq vurmaq:</b> müştəri kartla artıq ödəyib fərqi nağd götürəndə "Müştəri ödədi" xanasına karta vurulan məbləği yazın (məs. 20), "Nağd qaytarıldı" seçin və "Kart" basın. Kartın hesabı artır, kassadakı nağd o qədər azalır, satış dəyişmir.</li>
-  <li><b>Müştəri fərqli məbləğ ödəyəndə</b> (məsələn hesab 10.50, verdi 11): "Müştəri ödədi" xanasına yazın və ya hazır düyməyə (11 ₼, 15 ₼) basın. Artıq pul bəxşiş kimi, əskik pul endirim kimi yazılır. Bəxşiş hesabatda ayrıca görünür və kassa hesabına daxildir.</li>
-  <li><b>Nağd + kart:</b> müştəri bir hissəni nağd, qalanını kartla ödəyəndə. Nağd hissəni yazın və ya "Yarısı" düyməsinə basın, kart hissəsi özü hesablanır. Sonra "Təsdiqlə" basın.</li>
-  <li><b>Qismən nisyə:</b> müştəri hesabın bir hissəsini indi ödəyirsə, Nisyə pəncərəsində "İndi ödənilən hissə" xanasına məbləği yazın və Nağd və ya Kart seçin. Borca yalnız qalan hissə yazılır, ödənilən hissə kassaya düşür.</li>
-  <li><b>Nisyə:</b> müştərinin adını yazıb "Nisyəyə yaz" basın. Aşağıda köhnə müştərilər görünür, birinə bassanız, nisyə onun adına yazılır. Yazdığınız ad köhnə müştərinin adı ilə eynidirsə, yeni müştəri yaradılmır, köhnəsinə yazılır.</li>
-  <li>Hesab bağlananda reseptə və setlərə görə anbardan mallar avtomatik çıxılır.</li></ul>`],
- ['Nisyə dəftəri', `<ul><li>Aşağıdakı "Nisyə" bölməsində bütün borclular və ümumi nisyə məbləği görünür. Ad və ya telefonla axtarmaq olar.</li>
-  <li>Müştəriyə basanda onun bütün nisyələri və ödənişləri tarixi ilə görünür.</li>
-  <li><b>Ödəniş al:</b> müştəri borcunu qaytaranda məbləği yazın, "Nağd aldım" və ya "Kartla aldım" basın. Bu pul hesabatda "Borcdan qaytarılan" kimi görünür.</li>
-  <li><b>Kağız dəftərdəki köhnə borclar:</b> "+ Müştəri" ilə yaradıb "Köhnə borcu" xanasına yazın, ya da müştərinin səhifəsində "Borc yaz" basın.</li>
-  <li>Səhv qeydi × ilə silmək olar, bu da jurnala düşür.</li></ul>`],
- ['Menyu, setlər, resept və maya dəyəri', `<ul><li><b>Məhsul:</b> adı, kateqoriyası, qiyməti. ✎ ilə istənilən vaxt dəyişilir.</li>
-  <li><b>Resept:</b> məhsul 1 ədəd satılanda anbardan nə çıxdığını göstərir. Anbar malının düyməsinə basıb miqdarı yazın. Kq ilə ölçülən mallar reseptdə qramla, litr ilə ölçülənlər ml ilə yazılır.</li>
-  <li><b>Hazır mal:</b> su, kola, sigaret kimi mallarda "Hazır mal kimi say tut" işarələyin. Onda məhsulun özünün sayı tutulur.</li>
-  <li><b>Maya dəyəri</b> resept və bazarlıqdakı son alış qiymətinə görə özü hesablanır. İstəsəniz, əllə də yaza bilərsiniz. Maya dəyəri olmasa, hesabatda mənfəət görünmür.</li>
-  <li><b>Set:</b> "+ Set" ilə bir neçə məhsulu bir qiymətə birləşdirin. Proqram tərkibin ayrı-ayrılıqda nə qədər olduğunu və müştərinin qənaətini göstərir. Set satılanda tərkibindəki hər şey anbardan çıxılır.</li>
-  <li>Setin tərkibində olan məhsulu silmək olmur, əvvəlcə setdən çıxarın.</li></ul>`],
- ['Anbar', `<ul><li>Hər malın adı, vahidi, indiki sayı və minimumu var.</li>
-  <li>− və + ilə sayı tez dəyişin. Rəqəmin özünə basıb dəqiq say yazın: bu, ay sonu sayım üçündür.</li>
-  <li>Say minimuma çatanda mal qırmızı olur və avtomatik "Alınacaqlar" siyahısına düşür.</li>
-  <li>Satış olduqca reseptdəki mallar özü azalır, bazarlıq yazanda özü artır.</li>
-  <li><b>Anbar səhv göstərirsə:</b> real sayını sayıb rəqəmin üstünə basın və düz rəqəmi yazın.</li>
-  <li><b>Sayım:</b> Anbar → "Sayım" ekranında bütün mallar bir siyahıdadır: xammal və menyudan satılan hazır mallar (paxlava, su, kola…). Saydığınız rəqəmi və minimumu yazıb bir dəfə "Yadda saxla" basın. Say tutulmayan menyu malına rəqəm yazsanız, onun sayı avtomatik tutulmağa başlayır, satıldıqca azalır.</li></ul>`],
- ['Bazarlıq', `<ul><li>Yuxarıda "Alınacaqlar" siyahısı var. Minimuma düşən mallar ora özü düşür. "+ Siyahıya at" ilə özünüz də əlavə edə bilərsiniz.</li>
-  <li>Siyahıdakı malın qutusuna basanda mal aşağıda seçilir.</li>
-  <li><b>Bazarlıq yazmaq:</b> alınan malların düymələrinə basın, bir neçəsini birlikdə seçmək olar. Hər mal üçün aşağıda sətir açılır: miqdarı − və + ilə seçin, məbləği yazın. Sonda bir dəfə "Yadda saxla" basın. Proqram keçən dəfəki qiyməti yadda saxlayır və məbləği özü doldurur.</li>
-  <li><b>Kimdən alındı:</b> tədarükçünü seçin. "Borca götürüldü" seçsəniz, məbləğ ona olan borcumuza yazılır.</li>
-  <li>"Yadda saxla" basanda miqdar anbara əlavə olunur və mal alınacaqlardan silinir.</li>
-  <li>Yeni mal lazımdırsa, "+ Yeni mal" ilə bir dəfə əlavə edin, sonra həmişə düymə kimi görünəcək.</li></ul>`],
- ['Xərclər', `<ul><li>Bazarlıq bölməsində yuxarıdan "Xərclər" seçin.</li><li>İşıq, Qaz, Su, İnternet, Kirayə, Təmir, Vergi, Nəqliyyat və ya Digər düyməsini seçib məbləği yazın. Qeyd istəyə bağlıdır.</li>
-  <li>İşçilərə verilən pullar burada yox, "İşçilər" bölməsində yazılır.</li></ul>`],
- ['Tədarükçülər', `<ul><li>Daha çox → Tədarükçülər. Kimdən mal aldığınızı adı və telefonu ilə yazın.</li>
-  <li>Borca alınan hər şey onun səhifəsinə düşür. Yuxarıda ümumi borcumuz görünür.</li><li>Pulunu verəndə "Ödəniş et" basıb məbləği yazın.</li></ul>`],
- ['İşçilər: davamiyyət və pul', `<ul><li>Daha çox → İşçilər. Yuxarıda gün seçilir: ‹ və › ilə keçmiş günlərə baxmaq olar.</li>
-  <li>İşçi gələndə "Gəldi", gedəndə "Getdi" basın. Saat yazılmır, yalnız gəlib-gəlmədiyi qeyd olunur. Səhv olsa, "Sıfırla" basın.</li>
-  <li><b>Yarım smen:</b> işçinin ✎ düyməsində "Tam gün" (məs. 18 ₼) və "Yarım smen" (məs. 12 ₼) məbləğlərini yazın. Onda bu işçidə "Tam gün" və "Yarım smen" düymələri çıxır. Səhv seçsəniz, "→ Tam gün" və ya "→ Yarım smen" ilə dəyişin. "Pul ver" basanda məbləğ o günün növünə görə özü dolur, aylıq hesab da buna görə aparılır.</li>
-  <li><b>Pul ver:</b> məbləği yazın, növünü seçin (Gündəlik, Avans, Maaş, Bonus). Bu pul hesabatda xərc kimi hesablanır.</li>
-  <li>Aşağıdakı aylıq cədvəldə hər işçinin neçə gün gəldiyi, gündəlik maaşa görə nə qədər haqq etdiyi, nə qədər alıb, nə qədər qaldığı görünür.</li></ul>`],
- ['Hesabat', `<ul><li><b>Bu ay kartı:</b> bu ayın satışı, keçən ayın eyni günləri ilə müqayisə (▲ artım, ▼ azalma) və keçən ayın tam satışı.</li>
-  <li><b>Aylıq hədəf:</b> hədəf qoyun, irəliləyiş zolağı çıxır. Hədəfə çatmaq üçün gündə nə qədər satış lazım olduğu da yazılır.</li>
-  <li><b>Dövr:</b> bu gün, dünən, bu həftə, bu ay və ya istədiyiniz tarix aralığı.</li>
-  <li><b>Qalıq</b> = satış − bazarlıq − xərclər − işçilərə verilən.</li>
-  <li><b>Kassaya nağd girən</b> = nağd satış + nağd+kart ödənişlərin nağd hissəsi + nisyədən nağd qaytarılan. Axşam kassanı sayanda bu rəqəmlə müqayisə edin.</li>
-  <li><b>Məhsul gəlirliliyi:</b> hər məhsulun satışı, mənfəəti və marjası. Qruplar: <i>Ulduz</i> (çox satılır və yaxşı qazandırır), <i>Çox satılır, az qazandırır</i> (qiymətinə baxın), <i>Az satılır, yaxşı qazandırır</i> (reklam edin), <i>Zəif</i> (menyudan çıxarmağı düşünün).</li>
-  <li><b>Qələbəlik saatları və həftənin günləri:</b> ən çox satış olan vaxtlar. İşçi növbəsini buna görə qurun.</li>
-  <li><b>Gün sonu:</b> "Daha çox → Gün sonu" və ya Hesabatda "Gün sonu mətni" basın. "WhatsApp-a göndər" düyməsi WhatsApp-ı hazır mesajla açır, siz yalnız göndər basırsınız. Parametrlərdə nömrə yazsanız, mesaj həmişə o nömrəyə hazırlanır.</li>
-  <li><b>Excel üçün yüklə:</b> çeklər CSV faylı kimi yüklənir, Excel-də açılır.</li>
-  <li>Çekə basanda içi açılır. <b>"Çeki düzəlt"</b> çeki masaya qaytarır: məhsul əlavə edin və ya çıxarın, yenidən bağlayın, çek öz tarixində qalır. Səhv bağlanmış çeki "Çeki sil" ilə tam silmək olar. Hər ikisi jurnala düşür.</li>
-  <li><b>Çekin adını dəyişmək:</b> çekə basın, "✎ Adı dəyiş" seçin, yeni adı yazın. Yalnız ad dəyişir, məbləğ, tarix və məhsullar qalır.</li>
-  <li><b>Çek axtarışı:</b> "Bağlanmış çeklər" altındakı xanaya masanın adını, müvəqqəti adı (məsələn Vip 4), nisyə müştərisini, məhsul adını və ya məbləği yazın. Uyğun çeklər və onların cəmi görünür.</li></ul>`],
- ['Ləğv jurnalı', `<p>Daha çox → Ləğv jurnalı. Pulun itməməsi üçün silinən hər şey burada qalır.</p><ul>
-  <li>Bunlar yazılır: sifarişdən çıxarılan məhsul, ödənişsiz boşaldılan masa, verilən endirim, silinən çek, silinən bazarlıq, nisyə və işçi ödənişi.</li>
-  <li>Məhsul vurulandan 30 saniyə ərzində çıxarılıbsa, "Dərhal düzəliş" kimi ayrılır. Bu, adətən səhv vurmadır.</li>
-  <li>Qalan çıxarmalara diqqət edin, xüsusən müştəri gedəndən sonra edilənlərə.</li></ul>`],
- ['Növbəni bağlamaq və WhatsApp hesabatı', `<ul><li>Gecə işi bitəndə Masalar ekranının ən aşağısındakı <b>🌙 Növbəni bağla</b> düyməsinə basın (və ya Daha çox → Növbəni bağla).</li>
-  <li>Hesabat təqvim gününə görə yox, <b>əvvəlki növbə bağlanandan bu ana qədər</b> olanları əhatə edir. Gecə yarısından sonra bağlasanız da, axşamın satışları düşür.</li>
-  <li>Açıq masa varsa, proqram xəbərdarlıq edir. Onları əvvəlcə bağlayın.</li>
-  <li><b>Növbələr:</b> Daha çox → Növbələr (və ya Masalar ekranında "Bütün növbələr"). Yuxarıda hazırkı açıq növbə, altında günlər üzrə bütün növbələr: ✅ bağlanan (kim, nə vaxt, satış, kassa fərqi) və ⚠️ bağlanmayan günlər. Hər birinə "›" ilə basıb hesabatına baxmaq və onu WhatsApp-a və ya Telegram-a yenidən göndərmək olar.</li>
-  <li>Kassadakı nağdı sayıb yazsanız, proqram nə qədər olmalı olduğunu hesablayır və fərqi (artıq və ya əskik) hesabata yazır.</li>
-  <li>Parametrlərdə hesabatın hara gedəcəyini seçin: <b>Telegram</b> (avtomatik, dərhal), <b>WhatsApp</b> (hazır mesajla açılır, siz göndər basırsınız) və ya CallMeBot (avtomatik, amma gecikə bilər). Bağlayandan sonra WhatsApp düyməsi həmişə çıxır.</li>
-  <li><b>Telegram botu qoşmaq:</b> Telegram-da @BotFather-ə /newbot yazın, ad verin, verdiyi açarı (token) Parametrlərə yapışdırın. Sonra öz botunuzu tapıb ona "salam" yazın, Parametrlərdə "Tap" basın, Chat ID özü dolacaq. "Test mesajı" ilə yoxlayın.</li></ul>`],
- ['Parametrlər və görünüş', `<ul><li><b>Xərc axtarışı və qrafik:</b> Bazarlıq və ya Xərclər siyahısında yuxarıdan dövrü seçin (məs. Bu ay), sonra axtarışa yazın və ya hazır düymələrdən birinə (Qəlyan, İşıq…) basın. Altında cəmi, qeyd sayı, orta, ən böyük xərc, günlərə görə qrafik və "nəyə görə" bölgüsü çıxır.</li><li><b>Alınacaqlar:</b> "Hamısını sil" siyahını təmizləyir. Minimumdan az qalan mallar sonra yenidən özü düşür.</li><li><b>Axtarış:</b> Bazarlıq və xərclər, Ləğv jurnalı, Menyu, Anbar, Sayım və Tədarükçülər siyahılarının yuxarısında 🔍 axtarış xanası var. Ad, qeyd, masa və ya məbləğ yazın, uyğun qeydlər və cəmi görünür.</li><li><b>Səhifə yenilənəndə</b> proqram olduğunuz bölmədə qalır (masalara atmır).</li><li><b>Satış cədvəli:</b> Daha çox → Satış cədvəli. Seçilən dövr (standart: bu ay) üçün ümumi göstəricilər, gündəlik satış qrafiki, həftə günlərinə görə orta satış və gün-gün cədvəl: çek, satış, nağd, kart, nisyə, xərc, işçi, qalıq. Sətrə və ya sütuna basanda həmin günün tam hesabatı açılır. Cədvəli CSV kimi Excel-ə yükləmək olar.</li><li><b>Ləğv jurnalına əl ilə yazmaq:</b> Daha çox → Ləğv jurnalı → "+ Əlavə et". Masa və ya ad, məbləğ, tarix, növ və istəsəniz qeyd yazın. Belə qeydlər "əl ilə yazılıb" kimi görünür.</li><li><b>Dövr üzrə sıfırlama:</b> Satışlar, Bazarlıq və xərclər, Ləğv jurnalı və İşçilər sıfırlananda pəncərədə dövr seçilir: Bu gün, Dünən, Sırağagün, Bu həftə, Bu ay, Tarix seç və ya Hamısı. Standart olaraq yalnız bu gün silinir.</li><li><b>İş günü:</b> Parametrlərdə "Yeni iş günü saat neçədə başlayır" (standart 06:00). Bu saata qədər olan satış, xərc və davamiyyət əvvəlki günə yazılır. Gecə 01:00-dakı satış "Bu gün" hesabatında görünür, səhər 06:00-dan sonra yeni gün başlayır.</li><li>Daha çox → Parametrlər, ya da Masalar ekranında çayxananın adına basın.</li>
-  <li>Buradan çayxananın adını, aylıq hədəfi və görünüşü (açıq, tünd, avtomatik) dəyişirsiniz.</li></ul>`],
- ['Məlumatlar harada saxlanılır', `<ul><li>claude.ai linki ilə açanda məlumatlar onlayn saxlanılır. Telefonda və kompüterdə eyni linki açsanız, eyni məlumatları görürsünüz.</li>
-  <li>HTML faylı kimi yükləyib açsanız, məlumatlar yalnız həmin brauzerdə qalır. Brauzeri təmizləsəniz, silinə bilər.</li>
-  <li>Linki yalnız etibar etdiyiniz adamlarla paylaşın.</li></ul>`],
- ['Tez-tez suallar', `<ul><li><b>Səhv məhsul vurdum.</b> Sifarişdə − basın. 30 saniyə ərzində etsəniz, "Dərhal düzəliş" kimi yazılır.</li>
-  <li><b>Hesabı səhv ödəniş növü ilə bağladım.</b> Hesabatda çeki tapıb silin (mallar anbara özü qayıdır), sonra masanı yenidən açıb düz bağlayın.</li>
-  <li><b>Anbar səhv göstərir.</b> Sayın üstünə basıb real rəqəmi yazın.</li>
-  <li><b>Kodu unutdum.</b> Bu proqramı qurduğunuz Claude söhbətinə yazın, kodu sıfırlamağa kömək edəcək. Kodu bir yerə yazıb saxlayın.</li>
-  <li><b>Test məlumatlarını necə silim?</b> Hər bölmənin ən aşağısında "sıfırla" düyməsi var (masalarda "Düzəlt" rejimində). Hamısı Parametrlər → Sıfırlama bölməsində də var. Təsdiq üçün SIFIRLA yazmaq lazımdır, əvvəlcə ehtiyat nüsxə yükləmək məsləhətdir.</li>
-  <li><b>İki telefon eyni anda işləyə bilərmi?</b> Bəli. Hər ikisində eyni e-poçt və kodla girin. Hər vurma ayrıca yazılır, eyni masaya eyni anda vurulsa da, anbar eyni anda azalsa da heç nə itmir.</li>
-  <li><b>Yeni funksiya lazımdır.</b> Claude-a yazın, əlavə edək.</li></ul>`]
+ ['🚀 Başlanğıc: proqrama giriş', `<p>Çayxor çayxananın kassa və idarəetmə proqramıdır. Masalar, sifariş, nisyə, anbar, bazarlıq, xərclər, işçilər və hesabat bir yerdədir.</p>
+  <ol><li><b>İlk dəfə:</b> hər telefonda bir dəfə e-poçt və parolla daxil olursunuz. Sonra yalnız <b>4 rəqəmli kod</b> soruşulur.</li>
+  <li><b>Kilidləmək:</b> yuxarı sağdakı adınıza basın → "Kilidlə". Yenidən açmaq üçün kodu yığın.</li>
+  <li><b>Ana ekrana əlavə etmək:</b> iPhone-da Safari → paylaş → "Ana ekrana əlavə et". Android-də Chrome → ⋮ → "Tətbiqi quraşdır".</li></ul>
+  <ul><li>İnternet kəsiləndə də işləyir. İnternet gələn kimi hər şey özü yadda qalır.</li>
+  <li>İki telefonda eyni anda işləmək olar, məlumatlar dərhal hər ikisində görünür.</li>
+  <li>Səhifəni yeniləyəndə proqram olduğunuz bölmədə qalır.</li></ul>`],
+ ['🪑 Masalar', `<ol><li>Masaya basın, sifariş ekranı açılır.</li>
+  <li><b>Müvəqqəti ad</b> (məs. müştərinin adı): masanı açın, yuxarıda adına (✎) basın. Hesab bağlananda ad silinir, masa öz adına qayıdır. Çekdə isə bu ad qalır.</li>
+  <li><b>Masa əlavə etmək, daimi ad, zona, sıra:</b> Masalar ekranında "Düzəlt" basın.</li>
+  <li><b>Köçürmək:</b> masanın içində "Köçür" → yeni masanı seçin.</li>
+  <li><b>Ödənişsiz boşaltmaq:</b> masanın içində ⋯ → "Boşalt". Jurnala yazılır.</li></ol>
+  <p><b>Bizim masa:</b> özünüz üçün götürdüyünüz mallar. Satış sayılmır, amma anbardan çıxılır.</p>`],
+ ['🧾 Sifariş vermək', `<ol><li>Məhsul düyməsinə hər basış = 1 ədəd. Tez-tez basmaq olar, ekran yaxınlaşmır.</li>
+  <li>"Hamısı" seçiləndə ən yuxarıda <b>⭐ Ən çox satılanlar</b> görünür.</li>
+  <li>Axtarış və kategoriyalar (Çay, Şirniyyat, Setlər…) yuxarıdadır.</li>
+  <li>Telefonda <b>Menyu / Sifariş</b> düymələri ilə keçid edin. Sifarişdə − və + ilə sayı dəyişin.</li>
+  <li><b>Menyuda olmayan məhsul:</b> siyahının ən aşağısında "+ Menyuda olmayan məhsul" → ad və qiymət yazın. İstəsəniz "Menyuya da əlavə et" seçin.</li></ol>`],
+ ['💳 Hesabı bağlamaq və ödəniş', `<ol><li>"Hesabı bağla" basın.</li>
+  <li><b>Endirim</b> lazımdırsa, ₼ və ya % ilə yazın.</li>
+  <li>Ödəniş seçin: <b>Nağd</b>, <b>Kart</b>, <b>Nağd + kart</b> (nağd hissəni yazırsınız, qalanı karta düşür) və ya <b>Nisyə</b>.</li></ol>
+  <p><b>Müştəri fərqli məbləğ ödəyəndə</b> ("Müştəri ödədi" xanası və ya hazır 11 ₼ / 15 ₼ düymələri):</p>
+  <ul><li>Artıq ödəyibsə → <b>Bəxşiş</b> kimi yazılır.</li>
+  <li>Kartla artıq vurub fərqi nağd götürübsə → <b>"Nağd qaytarıldı"</b> seçin və <b>Kart</b> basın.</li>
+  <li>Az ödəyibsə → fərq endirim kimi yazılır.</li></ul>
+  <p><b>Keçmiş günə yazmaq:</b> "📅 Başqa günə yaz" → Dünən, Sırağagün və ya tarix. Belə çeklər "sonradan yazılıb" kimi görünür.</p>`],
+ ['📒 Nisyə (borc dəftəri)', `<ol><li>Hesab bağlayanda <b>Nisyə</b> basın.</li>
+  <li>Müştərinin <b>adını</b> yazıb "Nisyəyə yaz" basın, ya da aşağıdakı <b>köhnə müştərilər</b>dən birini seçin. Eyni ad yazılsa, ikinci müştəri yaradılmır.</li>
+  <li><b>Qismən nisyə:</b> müştəri bir hissəni indi verirsə, "İndi ödənilən hissə" xanasına yazın və Nağd və ya Kart seçin. Borca yalnız qalan hissə yazılır.</li></ol>
+  <ul><li><b>Borc qaytaranda:</b> Nisyə bölməsi → müştəri → "Ödəniş qəbul et". Bu pul hesabatda "Borcdan qaytarılan" kimi görünür.</li>
+  <li>Hər müştərinin səhifəsində bütün borc və ödəniş tarixçəsi var.</li></ul>`],
+ ['🍵 Menyu, setlər, resept', `<ul><li><b>Daha çox → Menyu və setlər.</b> "+ Məhsul" ilə yeni məhsul, ✎ ilə qiymət və ad dəyişin.</li>
+  <li><b>Set:</b> bir neçə məhsul bir qiymətə (məs. çaynik çay + mürəbbə + şirniyyat). Set satılanda tərkibi anbardan çıxır.</li>
+  <li><b>Resept:</b> 1 ədəd satılanda anbardan nə çıxsın (məs. çaynik çay = 10 qr qara çay + 30 qr qənd).</li>
+  <li><b>Maya dəyəri</b> resept və son alış qiymətindən özü hesablanır.</li>
+  <li>Hazır mallar (su, kola, paxlava) üçün say tutmaq olar, satıldıqca özü azalır.</li></ul>`],
+ ['📦 Anbar və sayım', `<ul><li><b>Daha çox → Anbar.</b> Mallar kategoriyalara bölünüb. − və + ilə dəyişin və ya rəqəmə basıb dəqiq sayı yazın.</li>
+  <li><b>Minimum:</b> say bu rəqəmə düşəndə mal özü <b>Alınacaqlar</b> siyahısına keçir.</li>
+  <li><b>Sayım:</b> Anbar → "Sayım". Bütün mallar bir siyahıdadır, saydığınız rəqəmləri yazıb bir dəfə "Yadda saxla" basın. Boş saxladıqlarınız dəyişmir.</li>
+  <li>Satış, Bizim masa və bazarlıq anbarı özü dəyişir. Çek və ya bazarlıq silinəndə anbar geri düzəlir.</li>
+  <li><b>"Anbar sayları: sıfırla"</b> yalnız sayları 0 edir, mallar və reseptlər qalır.</li></ul>`],
+ ['🛒 Bazarlıq', `<ol><li><b>Bazarlıq</b> bölməsi → "Nə alındı?" hissəsində alınan malların düymələrinə basın. Bir neçəsini birlikdə seçmək olar.</li>
+  <li>Hər mal üçün açılan sətirdə <b>miqdarı</b> (− +) və <b>məbləği</b> yazın. Keçən dəfəki qiymətə görə məbləğ özü dolur.</li>
+  <li>İstəsəniz tədarükçünü, "Borca götürüldü" seçimini və tarixi seçin.</li>
+  <li>"Yadda saxla" basın. Mallar anbara özü əlavə olunur.</li></ol>
+  <ul><li><b>Alınacaqlar</b> siyahısı yuxarıdadır. Qutuya basanda mal seçilir. "Hamısını sil" siyahını təmizləyir.</li></ul>`],
+ ['💸 Xərclər', `<ol><li>Bazarlıq → <b>Xərclər</b> tabı.</li>
+  <li>Növü seçin: <b>Qəlyan</b>, İşıq, Qaz, Su, İnternet, Kirayə, Təmir, Vergi, Nəqliyyat, Digər.</li>
+  <li>Məbləği, istəsəniz qeydi və tarixi yazıb "Yadda saxla" basın.</li></ol>
+  <p><b>Bir xərcə nə qədər getdiyini görmək:</b> aşağıda dövrü seçin (məs. Bu ay), sonra hazır düymələrdən birinə (Qəlyan, İşıq…) basın və ya axtarışa yazın. Cəmi, orta, ən böyük xərc, günlərə görə qrafik çıxır.</p>`],
+ ['🚚 Tədarükçülər', `<ul><li><b>Daha çox → Tədarükçülər.</b> Kimdən mal aldığınız və nə qədər borcunuz olduğu.</li>
+  <li>Bazarlıqda "Borca götürüldü" seçsəniz, borc buraya özü yazılır.</li>
+  <li>Pulu verəndə tədarükçünün səhifəsində "Ödəniş et" basın.</li>
+  <li>Yeni tədarükçü yaradanda "köhnə borc" xanası proqramdan əvvəlki borc üçündür. Hesabata düşmür.</li></ul>`],
+ ['👥 İşçilər', `<ul><li><b>Daha çox → İşçilər.</b> İşçi gələndə <b>"Gəldi"</b>, gedəndə <b>"Getdi"</b>. Saat yazılmır.</li>
+  <li><b>Yarım smen:</b> işçinin ✎ düyməsində "Tam gün" (məs. 18 ₼) və "Yarım smen" (məs. 12 ₼) yazın. Onda iki düymə çıxır. Səhv seçsəniz "→ Tam gün / → Yarım smen" ilə dəyişin.</li>
+  <li><b>Pul ver:</b> gündəlik, avans, maaş, bonus. Məbləğ o günün növünə görə özü dolur.</li>
+  <li><b>Aylıq cədvəl:</b> hər işçinin gün sayı ("10 + 3y" = 10 tam, 3 yarım), hesablanan, verilən və qalıq.</li>
+  <li>Gün dəyişmək üçün yuxarıdakı ‹ › oxlarından istifadə edin. Səhv qeydi "Sıfırla" ilə silin.</li></ul>`],
+ ['📊 Hesabat', `<p><b>Ən yuxarıda — "Bu ay" kartı:</b> ay ərzində kassaya real daxil olan pul = satış + bəxşiş + borcdan qaytarılan (nisyə sayılmır). Keçən ayın eyni günləri ilə müqayisə (▲▼ %) və aylıq hədəf.</p>
+  <p><b>Dövr seçin:</b> Bu gün · Dünən · Sırağagün · Bu həftə · Bu ay · Tarix seç. Altında:</p>
+  <ul><li><b>Qalıq</b> = satış + bəxşiş − bazarlıq − xərc − işçilərə verilən.</li>
+  <li><b>Kassa</b> = nağd + kart + nisyə, faizlərlə. "Kassada nağd olmalıdır" axşam sayım üçündür.</li>
+  <li><b>Satış · Çek sayı · Satış + bəxşiş</b> yan-yana.</li>
+  <li>Məhsul gəlirliliyi, qələbəlik saatları, günlər üzrə satış.</li></ul>
+  <p><b>Bağlanmış çeklər:</b> axtarışa masa, ad, məhsul və ya məbləğ yazın. Çekə basanda:</p>
+  <ul><li><b>✎ Adı dəyiş</b> — yalnız ad dəyişir.</li>
+  <li><b>Çeki düzəlt</b> — çek masaya qayıdır, dəyişib yenidən bağlayırsınız, tarix eyni qalır.</li>
+  <li><b>Çeki sil</b> — tam silinir, mallar anbara qayıdır, jurnala yazılır.</li></ul>`],
+ ['📈 Satış cədvəli (gün-gün)', `<ul><li><b>Daha çox → Satış cədvəli.</b> Standart olaraq bu ay.</li>
+  <li>Yuxarıda ümumi rəqəmlər, 🏆 ən yaxşı və ən zəif gün.</li>
+  <li><b>Gündəlik qrafik:</b> sütuna basanda həmin günün hesabatı açılır.</li>
+  <li><b>Həftə günlərinə görə orta satış:</b> hansı gün daha güclüdür.</li>
+  <li><b>Cədvəl:</b> Çek · Satış · Satış+bəxşiş · Nağd · Kart · Nisyə · Xərc · İşçi · Qalıq. Telefonda yana sürüşür. Sətrə basanda həmin günün hesabatı açılır.</li>
+  <li>"⬇ Excel üçün yüklə (CSV)" ilə cədvəli Excel-ə endirin.</li></ul>`],
+ ['🌙 Növbəni bağlamaq və Növbələr', `<ol><li>Gecə işi bitəndə Masalar ekranının altında <b>"🌙 Növbəni bağla"</b> basın. Açıq masa varsa, proqram xəbərdarlıq edir.</li>
+  <li>Kassada saydığınız nağdı yazın, proqram fərqi göstərir: düz, artıq və ya əskik.</li>
+  <li>Hesabat Parametrlərdə seçdiyiniz yerə gedir: <b>Telegram</b> (dərhal), WhatsApp (hazır mesajla açılır) və ya CallMeBot.</li></ol>
+  <p><b>Növbələr bölməsi</b> (Daha çox → Növbələr): açıq növbə, ✅ bağlanan və ⚠️ bağlanmayan günlər. "›" ilə istənilən növbənin hesabatını açıb yenidən göndərmək olar.</p>
+  <p>Növbəni bağlamağı unutsanız, hesabat gecə <b>04:00</b>-da Telegram-a özü gəlir.</p>`],
+ ['📲 Telegram-a avtomatik gələnlər', `<ul><li><b>Hər gecə 04:00</b> — gün sonu hesabatı (növbə bağlanmayıbsa).</li>
+  <li><b>Bazar ertəsi 05:00</b> — 💾 ehtiyat nüsxə faylı (bütün məlumatlar).</li>
+  <li><b>Bazar ertəsi 09:00</b> — keçən həftənin xülasəsi.</li>
+  <li><b>Ayın 1-i 09:30</b> — keçən ayın xülasəsi.</li></ul>
+  <p>Bunlar GitHub-dan işləyir. GitHub bəzən 5–15 dəqiqə gecikə bilər.</p>`],
+ ['🗑️ Ləğv jurnalı', `<ul><li><b>Daha çox → Ləğv jurnalı.</b> Sifarişdən çıxarılan, silinən çeklər, endirimlər, ödənişsiz boşaldılan masalar — kim, nə vaxt, nə qədər.</li>
+  <li>Vurulandan dərhal sonra edilən kiçik düzəlişlər "dərhal düzəliş" kimi ayrıca saxlanılır.</li>
+  <li><b>"+ Əlavə et"</b> ilə əl ilə qeyd yazmaq olar: masa, məbləğ, tarix, növ, qeyd.</li></ul>`],
+ ['🔍 Axtarış', `<p>Bu siyahılarda yuxarıda 🔍 axtarış xanası var. Yazdıqca siyahı süzülür:</p>
+  <ul><li>Bazarlıq və Xərclər (cəmi və qrafiklə), Ləğv jurnalı, Menyu, Anbar, Sayım, Tədarükçülər.</li>
+  <li>Nisyə — müştəri adı ilə. Hesabat — bağlanmış çeklərdə.</li>
+  <li>Bu təlimatda da — ən yuxarıdakı xanaya yazın.</li></ul>`],
+ ['⚙️ Parametrlər', `<ul><li><b>Daha çox → Parametrlər.</b> Çayxananın adı, aylıq hədəf, görünüş (açıq/tünd).</li>
+  <li><b>Yeni iş günü saat neçədə başlayır</b> (standart 06:00). Gecə bu saata qədər olan satış əvvəlki günə yazılır.</li>
+  <li><b>Hesabat hara getsin:</b> Telegram, WhatsApp və ya CallMeBot.</li>
+  <li><b>Telegram qoşmaq:</b> @BotFather-dən token alın, Parametrlərə yapışdırın, botunuza "salam" yazın, "Tap" basın, "Test mesajı" ilə yoxlayın.</li>
+  <li><b>Ehtiyat nüsxə yüklə / Bərpa et.</b></li></ul>`],
+ ['♻️ Sıfırlama', `<ul><li>Hər bölmənin ən altında "↺ … sıfırla" düyməsi var. Təsdiq üçün <b>SIFIRLA</b> yazmaq lazımdır.</li>
+  <li>Satışlar, Bazarlıq və xərclər, Ləğv jurnalı və İşçilərdə <b>dövr seçilir</b>: Bu gün (standart), Dünən, Sırağagün, Bu həftə, Bu ay, Tarix seç, Hamısı.</li>
+  <li><b>"Hər şey"</b> sıfırlananda Parametrlər (ad, Telegram) və kod qalır.</li>
+  <li>Sıfırlamadan əvvəl "Əvvəlcə ehtiyat nüsxə yüklə" basmaq tövsiyə olunur. Geri qaytarmaq olmur.</li></ul>`],
+ ['💾 Məlumatlar, yeniləmə və təhlükəsizlik', `<ul><li>Məlumatlar Firebase bazasındadır (pulsuz plan). Telefon itsə də məlumat itmir.</li>
+  <li>Proqramın ünvanı: <b>jalaimanovaa.github.io/cayxor</b></li>
+  <li><b>Yeni versiya yükləmək:</b> GitHub → cayxor → Add file → Upload files → index.html → Commit. 1–2 dəqiqədən sonra proqramı tam bağlayıb açın.</li>
+  <li>Parolları bir yerdə saxlayın: Firebase e-poçt/parol, 4 rəqəmli kod, Telegram token. Google hesabına iki addımlı təsdiq qoşun.</li></ul>`],
+ ['❓ Tez-tez suallar', `<ul><li><b>Hesabı səhv ödəniş növü ilə bağladım.</b> Hesabatda çekə basın → "Çeki düzəlt", sonra düz bağlayın.</li>
+  <li><b>Dünənki masanı bu gün yazdım.</b> Bağlayanda "📅 Başqa günə yaz" → Dünən. Artıq bağlanıbsa: Çeki düzəlt → yenidən bağlayın.</li>
+  <li><b>Anbarda say səhvdir.</b> Rəqəmə basıb düz sayı yazın və ya Sayım ekranından istifadə edin.</li>
+  <li><b>Kassa əskik çıxır.</b> Gün ərzində kassadan pul götürülübsə, bu proqramda görünmür, ona görə fərq kimi çıxır.</li>
+  <li><b>Gecə 01:00-dakı satış hansı günə düşür?</b> Əvvəlki iş gününə (06:00-a qədər).</li>
+  <li><b>Yeni funksiya görünmür.</b> GitHub-da Actions bölməsində son iş ✅ olmalıdır. Sonra proqramı tam bağlayıb açın, lazım olsa iki dəfə.</li>
+  <li><b>Telegram mesajı gəlmir.</b> Parametrlər → "Telegram-a test mesajı göndər". Gəlmirsə, token və Chat ID-ni yoxlayın.</li>
+  <li><b>Başqa funksiya lazımdır.</b> Claude-a yazın, əlavə edək.</li></ul>`]
 ];
-function vHelp(){ return '<div class="help" style="margin:14px 0 20px">' + HELP.map(([t, b], i) => `<details ${i === 0 ? 'open' : ''}><summary>${t}</summary><div class="hb">${b}</div></details>`).join('') + '</div>'; }
+
+function vHelp(){ const q = (S.hq || '').trim();
+  const quick = [['💳','Hesab bağlamaq',3],['📒','Nisyə',4],['🛒','Bazarlıq',7],['💸','Xərclər',8],['📊','Hesabat',11],['🌙','Növbə',13],['❓','Suallar',20]];
+  return `<div class="help" style="margin:14px 0 20px"><input id="hq" type="search" data-inp="hq" value="${esc(q)}" placeholder="🔍 Təlimatda axtar: nisyə, bəxşiş, sayım…" autocomplete="off">
+    ${q ? '<p class="hint" id="hqInfo" style="margin:8px 2px"></p>' : `<div class="chips hquick" style="margin:10px 0 12px">${quick.map(([e, l, i]) => `<button class="chip" data-act="helpGo" data-i="${i}">${e} ${l}</button>`).join('')}</div>`}
+    ${HELP.map(([t, b], i) => `<details id="hs${i}" ${!q && i === (S.helpOpen ?? 0) ? 'open' : ''}><summary>${t}</summary><div class="hb">${b}</div></details>`).join('')}
+    <p class="muted" id="hqNone" style="display:none;margin:14px 2px">Heç nə tapılmadı. Başqa sözlə yoxlayın, məs. "kart", "borc", "anbar".</p></div>`; }
+function helpFilter(){ if (S.view !== 'help') return; const q = (S.hq || '').trim().toLocaleLowerCase('az'); if (!q) return;
+  let n = 0; document.querySelectorAll('.help details').forEach(d => { const ok = d.textContent.toLocaleLowerCase('az').includes(q); d.style.display = ok ? '' : 'none'; d.open = ok; if (!ok) return; n++;
+    const w = document.createTreeWalker(d, NodeFilter.SHOW_TEXT), L = []; while (w.nextNode()) L.push(w.currentNode);
+    L.forEach(t => { const low = t.nodeValue.toLocaleLowerCase('az'); let at = low.indexOf(q); if (at < 0) return; const f = document.createDocumentFragment(); let pos = 0;
+      while (at >= 0) { f.appendChild(document.createTextNode(t.nodeValue.slice(pos, at))); const m = document.createElement('mark'); m.textContent = t.nodeValue.slice(at, at + q.length); f.appendChild(m); pos = at + q.length; at = low.indexOf(q, pos); }
+      f.appendChild(document.createTextNode(t.nodeValue.slice(pos))); t.parentNode.replaceChild(f, t); }); });
+  const i = $('#hqInfo'); if (i) i.textContent = n ? n + ' bölmədə tapıldı' : ''; const no = $('#hqNone'); if (no) no.style.display = n ? 'none' : ''; }
 
 /* ---------- shift close ---------- */
 const fmtTs = ts => { const d = new Date(ts); return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + hm(ts); };
@@ -1969,6 +1993,7 @@ const ACT = {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + L.join('\n')], { type: 'text/csv;charset=utf-8' })); a.download = 'satis-' + S.salesData.r.from + '_' + S.salesData.r.to + '.csv'; a.click(); },
   shopClear: () => confirmBox('Alınacaqlar siyahısındakı ' + S.shop.length + ' qeydin hamısı silinsin? Anbarda minimumdan az qalan mallar növbəti dəyişiklikdə yenidən siyahıya düşəcək.', 'Hamısını sil', () => { S.shop = []; saveShop(); render(); toast('Alınacaqlar siyahısı təmizləndi'); }),
   fqSet: el => { const k = el.dataset.k; S.fq[k] = S.fq[k] === el.dataset.v ? '' : el.dataset.v; const i = document.getElementById('fq_' + k); if (i) i.value = S.fq[k]; applyFilters(); },
+  helpGo: el => { S.helpOpen = +el.dataset.i; render(); setTimeout(() => { const d = document.getElementById('hs' + S.helpOpen); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 60); },
   shiftView: async el => { const f = +el.dataset.f, t = +el.dataset.t; modal('<h2>Növbə hesabatı</h2><p class="muted">Hazırlanır…</p>');
     const RP = await rangeRP(f, t); let text = eodText(RP, (el.dataset.id ? 'Növbə: ' : 'Bağlanmamış gün: ') + fmtTs(f) + ' – ' + fmtTs(t));
     if (el.dataset.id) { const doc = S.shiftData.days.find(d => d.day === el.dataset.day), x = doc && doc.shifts && doc.shifts[el.dataset.id];
@@ -2140,6 +2165,7 @@ document.addEventListener('input', e => { const el = e.target, k = el.dataset.in
   if (k === 'q') { S.q = el.value; render(); }
   if (k === 'nq') { S.nq = el.value; render(); }
   if (k === 'chq') { S.chq = el.value; render(); }
+  if (k === 'hq') { S.hq = el.value; render(); }
   if (k === 'fq') { S.fq[el.dataset.k] = el.value; applyFilters(); }
   if (k === 'cpq') { const l = $('#cpList'); if (l) l.innerHTML = custList(el.value); }
   if (k === 'disc') { PAY.v = el.value; const { sub: sb, disc, total } = payCalc(S.tabs[S.open]);
