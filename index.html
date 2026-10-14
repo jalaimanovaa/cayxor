@@ -691,7 +691,7 @@ async function loadDays(from, to){
   const [ds, legacy] = await Promise.all([Store.range('days', 'day', from, to), Store.range('sales', 'day', from, to)]);
   return { days: ds, checks: [...ds.flatMap(checksOf), ...legacy.map(x => ({ ...x, legacy: true }))],
     logs: ds.flatMap(d => ent(d.log).map(x => ({ ...x, day: d.day }))), pays: ds.flatMap(d => ent(d.pays).map(x => ({ ...x, day: d.day }))),
-    inc: ds.flatMap(d => ent(d.inc).map(x => ({ ...x, day: d.day }))), own: ds.flatMap(d => ent(d.own).map(x => ({ ...x, day: d.day }))) }; }
+    inc: ds.flatMap(d => ent(d.inc).filter(x => !x.noDay).map(x => ({ ...x, day: d.day }))), incAll: ds.flatMap(d => ent(d.inc).map(x => ({ ...x, day: d.day }))), own: ds.flatMap(d => ent(d.own).map(x => ({ ...x, day: d.day }))) }; }
 
 /* ---------- icons ---------- */
 const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
@@ -955,10 +955,10 @@ function vLed(){
   const m = l.kind === 'm', b = bal(l), E = ent(l.e).sort((x, y) => y.at - x.at);
   let h = `<div class="card" style="margin-top:14px">${l.phone ? `<a href="tel:${esc(l.phone)}" class="muted">${esc(l.phone)}</a>` : ''}
     <div><small>${m ? 'Borcu' : 'Bizim borcumuz'}</small></div><div class="bigbal ${b > 0 ? 'debt' : ''}">${money(b)}</div>
-    <div class="row"><button class="btn pri" data-act="ledPay">${m ? 'Ödəniş al' : 'Ödəniş et'}</button>${isAdmin() ? `<button class="btn" data-act="ledDebt">${m ? 'Borc yaz' : 'Borc yaz'}</button>` : ''}</div></div>`;
+    <div class="row"><button class="btn pri" data-act="ledPay">${m ? 'Ödəniş al' : 'Ödəniş et'}</button>${isAdmin() ? `<button class="btn" data-act="ledDebt">+ Borc yaz</button>${b !== 0 ? `<button class="btn warn" data-act="ledClear">${b > 0 ? 'Borcu sil' : 'Sıfırla'}</button>` : ''}` : ''}</div></div>`;
   h += '<div class="sec">Əməliyyatlar</div><div class="card" style="padding:4px 16px">';
-  h += E.length ? E.map(e => `<div class="li"><div class="grow"><div>${e.type === 'borc' ? (m ? 'Nisyə' : 'Mal alındı') : (m ? 'Ödədi' : 'Ödədik')}${e.pay ? `<span class="tag">${esc(e.pay)}</span>` : ''}</div>
-      <small>${dayLabel(dayStr(new Date(e.at)))}, ${hm(e.at)}${e.note ? ', ' + esc(e.note) : ''}${e.by ? ', ' + esc(e.by) : ''}</small></div>
+  h += E.length ? E.map(e => `<div class="li"><div class="grow"><div>${e.adj ? (e.type === 'borc' ? 'Düzəliş (borc artırıldı)' : 'Borc silindi') : e.manual && e.type === 'borc' ? 'Borc yazıldı (əl ilə)' : e.type === 'borc' ? (m ? 'Nisyə' : 'Mal alındı') : (m ? 'Ödədi' : 'Ödədik')}${e.pay ? `<span class="tag">${esc(e.pay)}</span>` : ''}${e.noDate ? '<span class="tag">tarixsiz</span>' : ''}</div>
+      <small>${[e.noDate ? '' : (e.day ? dayLabel(e.day) : dayLabel(dayStr(new Date(e.at)))) + (e.manual ? '' : ', ' + hm(e.at)), e.note ? esc(e.note) : '', e.by ? esc(e.by) : ''].filter(Boolean).join(', ')}</small></div>
       <div class="amt ${e.type === 'borc' ? 'debt' : 'up'}">${e.type === 'borc' ? '+' : '−'}${money(e.amount)}</div>${isAdmin() ? `<button class="x" data-act="ledDel" data-id="${e.id}" aria-label="Sil">×</button>` : ''}</div>`).join('')
     : '<p class="muted">Hələ əməliyyat yoxdur.</p>';
   return h + '</div>';
@@ -1117,26 +1117,25 @@ function vStaff(){
   const d = S.stDay, isToday = d === dayStr();
   const goneN = S.staff.filter(u => u.left).length;
   let h = `<div class="daynav"><button class="btn sm" data-act="stDay" data-d="-1" aria-label="Əvvəlki gün">‹</button><b>${dayLabel(d)}</b><button class="btn sm" data-act="stDay" data-d="1" ${isToday ? 'disabled' : ''} aria-label="Növbəti gün">›</button></div>`;
-  h += `<button class="btn ghost sm" style="width:100%;margin-top:8px" data-act="oldGo">🗂 Köhnə işçilər${goneN ? ' (' + goneN + ')' : ''} ›</button>`;
   if (!S.stData) return h + '<div class="loading">Yüklənir…</div>';
   const doc = isToday && S.dayDoc ? S.dayDoc : S.stData, att = doc.att || {}, pays = ent(doc.pays);
   const active = S.staff.filter(u => !u.left), gone = S.staff.filter(u => u.left);
   h += '<div class="card" style="margin-top:12px;padding:4px 16px">' + (active.length ? active.map(u => { const a = att[u.id];
-    const hw = u.halfWage > 0, st = a && a.in ? (hw ? (a.half ? 'Yarım smen ✓' : 'Tam gün ✓') : 'Gəldi ✓') + (a.out ? ', getdi' : '') : 'Gəlməyib';
+    const hw = u.halfWage > 0, st = a && a.in ? (hw ? (a.half ? 'Yarım smen ✓' : 'Tam gün ✓') : 'Gəldi ✓') : 'Gəlməyib';
     const paid = sum(pays.filter(p => p.staff === u.id), p => p.amount);
     if (u.role === 'admin') return `<div class="srow"><div class="top"><div><b>${esc(u.name)}</b> <span class="tag">Sahib</span></div>
       <button class="editic" data-act="staffForm" data-id="${u.id}" aria-label="Düzəliş et" style="background:none">✎</button></div></div>`;
     return `<div class="srow"><div class="top"><div><b>${esc(u.name)}</b> <span class="tag">${u.role === 'admin' ? 'Sahib' : 'İşçi'}</span><div><small class="${a && a.in ? 'up' : ''}">${st}${paid ? ', bu gün verilib ' + money(paid) : ''}</small></div></div>
       <button class="editic" data-act="staffForm" data-id="${u.id}" aria-label="Düzəliş et" style="background:none">✎</button></div>
       <div class="row">${!(a && a.in) ? (hw ? `<button class="btn sm" data-act="att" data-id="${u.id}" data-t="in">Tam gün</button><button class="btn sm" data-act="att" data-id="${u.id}" data-t="half">Yarım smen</button>` : `<button class="btn sm" data-act="att" data-id="${u.id}" data-t="in">Gəldi</button>`)
-        : (hw ? `<button class="btn ghost sm" data-act="att" data-id="${u.id}" data-t="${a.half ? 'toFull' : 'toHalf'}">${a.half ? '→ Tam gün' : '→ Yarım smen'}</button>` : '') + (!a.out ? `<button class="btn sm" data-act="att" data-id="${u.id}" data-t="out">Getdi</button>` : '')}
+        : (hw ? `<button class="btn ghost sm" data-act="att" data-id="${u.id}" data-t="${a.half ? 'toFull' : 'toHalf'}">${a.half ? '→ Tam gün' : '→ Yarım smen'}</button>` : '')}
       ${a && a.in ? `<button class="btn ghost sm" data-act="att" data-id="${u.id}" data-t="reset">Sıfırla</button>` : ''}
       <button class="btn pri sm" data-act="payStaff" data-id="${u.id}">Pul ver</button></div></div>`; }).join('') : '<p class="muted">İşçi yoxdur.</p>') + '</div>';
   if (pays.length) h += `<div class="sec">Bu gün verilən pullar: ${money(sum(pays, p => p.amount))}</div><div class="card" style="padding:4px 16px">` +
     pays.sort((a, b) => b.at - a.at).map(p => `<div class="li"><div class="grow"><div>${esc(p.name)} <span class="tag">${esc(p.kind)}</span></div><small>${hm(p.at)}${p.note ? ', ' + esc(p.note) : ''}${p.by ? ', verən ' + esc(p.by) : ''}</small></div>
       <div class="amt">${money(p.amount)}</div><button class="x" data-act="delPay" data-id="${p.id}" aria-label="Sil">×</button></div>`).join('') + '</div>';
   const M = S.stMonth; if (M) { const [y, m] = d.split('-').map(Number);
-    const rows = S.staff.filter(u => u.role !== 'admin' && (!u.left || M.days.some(x => x.att && x.att[u.id] && x.att[u.id].in) || M.pays.some(p => p.staff === u.id))).map(u => { const A = M.days.map(x => x.att && x.att[u.id]).filter(a => a && a.in), hw = u.halfWage > 0, halfN = hw ? A.filter(a => a.half).length : 0, fullN = A.length - halfN, days = A.length;
+    const rows = S.staff.filter(u => u.role !== 'admin' && (!u.left || M.days.some(x => x.att && x.att[u.id] && x.att[u.id].in) || M.pays.some(p => p.staff === u.id))).sort((a, b) => (a.left ? 1 : 0) - (b.left ? 1 : 0)).map(u => { const A = M.days.map(x => x.att && x.att[u.id]).filter(a => a && a.in), hw = u.halfWage > 0, halfN = hw ? A.filter(a => a.half).length : 0, fullN = A.length - halfN, days = A.length;
       const paid = sum(M.pays.filter(p => p.staff === u.id), p => p.amount), earned = (u.wage || 0) * fullN + (u.halfWage || 0) * halfN;
       return `<tr><td>${esc(u.name)}${u.left ? ' <small class="muted">(köhnə)</small>' : ''}</td><td class="r">${hw && halfN ? fullN + ' + ' + halfN + 'y' : days}</td><td class="r">${u.wage ? money(earned) : '—'}</td><td class="r">${money(paid)}</td><td class="r ${u.wage && earned - paid > 0 ? 'debt' : ''}">${u.wage ? money(earned - paid) : '—'}</td></tr>`; }).join('');
     h += `<div class="sec">${MONTHS[m - 1]} ayı üzrə</div><div class="card scroll"><table><thead><tr><th>İşçi</th><th class="r">Gün</th><th class="r">Hesablanan</th><th class="r">Verilib</th><th class="r">Qalıq</th></tr></thead><tbody>${rows}</tbody></table>
@@ -1173,7 +1172,7 @@ async function loadCmp(){ const now = bizDate(), y = now.getFullYear(), m = now.
   const ps = new Date(y, m - 1, 1), pe = new Date(y, m, 0), pse = new Date(y, m - 1, Math.min(dayN, pe.getDate()));
   const R = await loadDays(dayStr(ps), dayStr(now)), cs = dayStr(now).slice(0, 8) + '01';
   const nisP = c => c.pay === 'nisyə' ? (c.nisAmt !== undefined && c.nisAmt !== null ? c.nisAmt : c.total) : 0;
-  const got = f => sum(R.checks.filter(c => f(c.day)), c => (+c.total || 0) + (+c.tip || 0) - nisP(c)) + sum(R.inc.filter(x => f(x.day)), x => x.amount);
+  const got = f => sum(R.checks.filter(c => f(c.day)), c => (+c.total || 0) + (+c.tip || 0) - nisP(c)) + sum(R.incAll.filter(x => f(x.day)), x => x.amount);
   S.cmp = { cur: got(d => d >= cs), prevSame: got(d => d < cs && d <= dayStr(pse)), prevFull: got(d => d < cs), dayN, dim: new Date(y, m + 1, 0).getDate(), m }; render(); }
 async function loadRep(){ S.rep = null; render(); const r = period(S.repP);
   const [d, b] = await Promise.all([loadDays(r.from, r.to), Store.range('buys', 'day', r.from, r.to)]); S.rep = { ...d, buys: b, r }; render(); }
@@ -1197,7 +1196,7 @@ function kassaCard(o){ const k = kassaParts(o), pct = v => k.cem ? Math.round(v 
     ${o.cbx ? `<div class="krow sub"><span>Karta artıq vurulub, nağd qaytarılıb</span><span></span><b>${money(o.cbx)}</b></div>` : ''}<div class="krow sub"><span>Kassada nağd olmalıdır</span><span></span><b>${money(o.cash + o.incCash + o.tipCash - (o.cbx || 0))}</b></div></div>`; }
 function monthCard(){ const c = S.cmp; if (!c) return '<div class="card" style="margin-top:14px"><small>Bu ay hesablanır…</small></div>';
   const tgt = S.settings.target || 0, pct = c.prevSame ? (c.cur - c.prevSame) / c.prevSame * 100 : null;
-  let h = `<div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><small>Bu ay, ${MONTHS[c.m]}</small><div style="font-size:28px;font-weight:700">${money(c.cur)}</div><small class="muted" style="display:block;font-size:13px">satış + bəxşiş + borcdan qaytarılan, nisyəsiz</small></div>
+  let h = `<div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><small>Bu ay, ${MONTHS[c.m]}</small><div style="font-size:28px;font-weight:700">${money(c.cur)}</div><small class="muted" style="display:block;font-size:13px">satış + bəxşiş + borcdan qaytarılan (tarixsiz də), nisyəsiz</small></div>
     ${pct !== null ? `<div class="${pct >= 0 ? 'up' : 'down'}" style="font-weight:600;font-size:18px">${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct).toFixed(0)}%</div>` : ''}</div>
     <small style="display:block">Keçən ayın ilk ${c.dayN} günündə: ${money(c.prevSame)}. Keçən ay tam: ${money(c.prevFull)}.</small>`;
   if (tgt) { const p = Math.min(100, c.cur / tgt * 100), left = Math.max(0, tgt - c.cur), dl = Math.max(1, c.dim - c.dayN + 1);
@@ -1303,7 +1302,10 @@ const HELP = [
   <li>Müştərinin <b>adını</b> yazıb "Nisyəyə yaz" basın, ya da aşağıdakı <b>köhnə müştərilər</b>dən birini seçin. Eyni ad yazılsa, ikinci müştəri yaradılmır.</li>
   <li><b>Qismən nisyə:</b> müştəri bir hissəni indi verirsə, "İndi ödənilən hissə" xanasına yazın və Nağd və ya Kart seçin. Borca yalnız qalan hissə yazılır.</li></ol>
   <ul><li><b>Borc qaytaranda:</b> Nisyə bölməsi → müştəri → "Ödəniş qəbul et". Bu pul hesabatda "Borcdan qaytarılan" kimi görünür.</li>
-  <li>Hər müştərinin səhifəsində bütün borc və ödəniş tarixçəsi var.</li></ul>`],
+  <li>Hər müştərinin səhifəsində bütün borc və ödəniş tarixçəsi var.</li>
+  <li><b>+ Borc yaz:</b> müştərinin səhifəsində əl ilə borc əlavə edin — <b>Tarixsiz</b> (məs. köhnə dəftər borcu) və ya tarix seçərək. Hesabata düşmür.</li>
+  <li><b>Ödəniş al</b> zamanı tarix seçilir: <b>Bu gün</b> (kassaya düşür), <b>Tarix seç</b> (həmin günün hesabatına düşür) və ya <b>Tarixsiz</b> (borcdan çıxılır və bu ayın aylıq hesabatına düşür, amma gündəlik kassaya düşmür).</li>
+  <li><b>Borcu sil:</b> borcu 0 edir (bağışlandı, səhv yazılmışdı və s.). Ödəniş sayılmır, kassaya düşmür. Tarixçədə "Borc silindi" kimi görünür, × ilə geri qaytarmaq olar.</li></ul>`],
  ['🍵 Menyu, setlər, resept', `<ul><li><b>Daha çox → Menyu və setlər.</b> "+ Məhsul" ilə yeni məhsul, ✎ ilə qiymət və ad dəyişin.</li>
   <li><b>Set:</b> bir neçə məhsul bir qiymətə (məs. çaynik çay + mürəbbə + şirniyyat). Set satılanda tərkibi anbardan çıxır.</li>
   <li><b>Resept:</b> 1 ədəd satılanda anbardan nə çıxsın (məs. çaynik çay = 10 qr qara çay + 30 qr qənd).</li>
@@ -1327,7 +1329,7 @@ const HELP = [
   <li>Bazarlıqda "Borca götürüldü" seçsəniz, borc buraya özü yazılır.</li>
   <li>Pulu verəndə tədarükçünün səhifəsində "Ödəniş et" basın.</li>
   <li>Yeni tədarükçü yaradanda "köhnə borc" xanası proqramdan əvvəlki borc üçündür. Hesabata düşmür.</li></ul>`],
- ['👥 İşçilər', `<ul><li><b>Daha çox → İşçilər.</b> İşçi gələndə <b>"Gəldi"</b>, gedəndə <b>"Getdi"</b>. Saat yazılmır.</li>
+ ['👥 İşçilər', `<ul><li><b>Daha çox → İşçilər.</b> İşçi gələndə <b>"Gəldi"</b> basın. Saat yazılmır.</li><li><b>İşdən çıxan işçi:</b> ✎ → "İşdən çıxdı". Səhifənin ən aşağısındakı <b>Köhnə işçilər</b> bölməsinə düşür, qeydləri qalır. "Geri qaytar" ilə aktiv edin.</li>
   <li><b>Yarım smen:</b> işçinin ✎ düyməsində "Tam gün" (məs. 18 ₼) və "Yarım smen" (məs. 12 ₼) yazın. Onda iki düymə çıxır. Səhv seçsəniz "→ Tam gün / → Yarım smen" ilə dəyişin.</li>
   <li><b>İşdən çıxan işçi:</b> ✎ → "İşdən çıxdı". İşçi silinmir, aşağıdakı <b>Köhnə işçilər</b> bölməsinə düşür. Keçmiş davamiyyəti və pulları qalır. "Geri qaytar" ilə yenidən aktiv edin, × ilə tam silin.</li>
   <li><b>Pul ver:</b> gündəlik, avans, maaş, bonus. Məbləğ o günün növünə görə özü dolur.</li>
@@ -1808,21 +1810,47 @@ const ACT = {
   ledPay: () => { const l = S.ledgers.find(x => x.id === S.ledOpen), m = l.kind === 'm', b = bal(l);
     modal(`<h2>${m ? 'Ödəniş al' : 'Ödəniş et'}: ${esc(l.name)}</h2><label for="lpAmt">Məbləğ ₼</label><input id="lpAmt" inputmode="decimal" value="${b > 0 ? b : ''}">
       <label for="lpNote">Qeyd (istəyə bağlı)</label><input id="lpNote">
+      <label>Tarix</label><div class="seg" id="lpSeg">${[['today','Bu gün'],['pick','Tarix seç'],['none','Tarixsiz']].map(([k, t], i) => `<button class="${i ? '' : 'on'}" data-act="lpDateMode" data-v="${k}">${t}</button>`).join('')}</div>
+      <input id="lpDate" type="date" value="${dayStr()}" max="${dayStr()}" style="display:none;margin-top:8px">
+      <p class="hint" id="lpHint">${m ? 'Bu günün kassasına və hesabatına "Borcdan qaytarılan" kimi düşür.' : 'Bu günün tarixi ilə yazılır.'}</p>
       <div class="acts">${m ? '<button class="btn pri" data-act="ledPaySave" data-p="nağd">Nağd aldım</button><button class="btn pri" data-act="ledPaySave" data-p="kart">Kartla aldım</button>' : '<button class="btn pri" data-act="ledPaySave" data-p="">Ödədim</button>'}</div>
-      <button class="btn ghost" style="width:100%;margin-top:10px" data-act="mClose">Ləğv et</button>`); },
+      <button class="btn ghost" style="width:100%;margin-top:10px" data-act="mClose">Ləğv et</button>`); S.lpMode = 'today'; },
+  lpDateMode: el => { S.lpMode = el.dataset.v; document.querySelectorAll('#lpSeg button').forEach(b => b.classList.toggle('on', b === el)); $('#lpDate').style.display = S.lpMode === 'pick' ? '' : 'none';
+    const m = (S.ledgers.find(x => x.id === S.ledOpen) || {}).kind === 'm';
+    $('#lpHint').textContent = S.lpMode === 'none' ? (m ? 'Borcdan çıxılır və bu ayın aylıq hesabatına düşür. Gündəlik kassaya və heç bir günün hesabatına düşmür.' : 'Yalnız borcdan çıxılır, heç bir günə yazılmır.') : S.lpMode === 'pick' ? (m ? 'Seçilən günün hesabatına "Borcdan qaytarılan" kimi düşür.' : 'Seçilən tarixlə yazılır.') : (m ? 'Bu günün kassasına və hesabatına "Borcdan qaytarılan" kimi düşür.' : 'Bu günün tarixi ilə yazılır.'); },
   ledPaySave: async el => { const l = S.ledgers.find(x => x.id === S.ledOpen), amt = r2(num(mv('lpAmt'))); if (!amt) return toast('Məbləği yazın');
-    const id = uid(), d = dayStr(), e = { type: 'odenis', amount: amt, pay: el.dataset.p, note: mv('lpNote'), at: Date.now(), by: S.me.name, day: d };
+    const mode = S.lpMode || 'today', pd = mode === 'pick' ? ($('#lpDate').value || dayStr()) : dayStr(); if (pd > dayStr()) return toast('Gələcək tarix seçmək olmaz');
+    const nowT = Date.now(), at = mode === 'pick' && pd !== dayStr() ? new Date(pd + 'T12:00').getTime() : nowT;
+    const id = uid(), e = { type: 'odenis', amount: amt, pay: el.dataset.p, note: mv('lpNote'), at, by: S.me.name };
+    if (mode === 'none') { e.noDate = true; e.incDay = dayStr(); } else { e.day = pd; if (mode === 'pick' && pd !== dayStr()) e.manual = true; }
     el.disabled = true; const ok = await Store.merge('ledgers/' + l.id, { e: { [id]: e } }); if (!ok) { el.disabled = false; return; }
-    if (l.kind === 'm') dayMerge(d, { inc: { [id]: { kind: 'nisyə', name: l.name, amount: amt, pay: el.dataset.p, at: e.at, by: S.me.name } } });
+    if (l.kind === 'm') dayMerge(pd, { inc: { [id]: { kind: 'nisyə', name: l.name, amount: amt, pay: el.dataset.p, at, by: S.me.name, ...(mode === 'none' ? { noDay: true } : {}) } } });
     closeModal(); toast('Yazıldı: ' + money(amt)); },
-  ledDebt: () => modal(`<h2>Borc yaz</h2><label for="ldAmt">Məbləğ ₼</label><input id="ldAmt" inputmode="decimal"><label for="ldNote">Qeyd</label><input id="ldNote" placeholder="Məs: kağız dəftərdən köhnə borc">
-    <div class="acts"><button class="btn" data-act="mClose">Ləğv et</button><button class="btn pri" data-act="ledDebtSave">Yadda saxla</button></div>`),
+  ledDebt: () => { S.ldNoDate = true; const l = S.ledgers.find(x => x.id === S.ledOpen);
+    modal(`<h2>Borc yaz: ${esc(l.name)}</h2><p class="muted">Satışa və hesabata düşmür, yalnız ${l.kind === 'm' ? 'müştərinin' : 'tədarükçünün'} borcuna yazılır.</p>
+      <label for="ldAmt">Məbləğ ₼</label><input id="ldAmt" inputmode="decimal" placeholder="0.00">
+      <label for="ldNote">Qeyd (istəyə bağlı)</label><input id="ldNote" placeholder="Məs: kağız dəftərdən köhnə borc">
+      <label>Tarix</label><div class="seg" id="ldSeg"><button class="on" data-act="ldDateMode" data-v="0">Tarixsiz</button><button data-act="ldDateMode" data-v="1">Tarix seç</button></div>
+      <input id="ldDate" type="date" value="${dayStr()}" max="${dayStr()}" style="display:none;margin-top:8px">
+      <div class="acts"><button class="btn" data-act="mClose">Ləğv et</button><button class="btn pri" data-act="ledDebtSave">Yadda saxla</button></div>`); },
+  ldDateMode: el => { S.ldNoDate = el.dataset.v === '0'; document.querySelectorAll('#ldSeg button').forEach(b => b.classList.toggle('on', b === el)); $('#ldDate').style.display = S.ldNoDate ? 'none' : ''; },
   ledDebtSave: async () => { const amt = r2(num(mv('ldAmt'))); if (!amt) return toast('Məbləği yazın');
-    await Store.merge('ledgers/' + S.ledOpen, { e: { [uid()]: { type: 'borc', amount: amt, note: mv('ldNote'), at: Date.now(), by: S.me.name } } }); closeModal(); },
+    const d = !S.ldNoDate && $('#ldDate').value ? $('#ldDate').value : '', e = { type: 'borc', manual: true, amount: amt, note: mv('ldNote'), at: Date.now(), by: S.me.name };
+    if (S.ldNoDate) e.noDate = true; else if (d) { e.day = d; if (d !== dayStr()) e.at = new Date(d + 'T12:00').getTime(); }
+    await Store.merge('ledgers/' + S.ledOpen, { e: { [uid()]: e } }); closeModal(); toast('Borc yazıldı: ' + money(amt)); },
+  ledClear: () => { const l = S.ledgers.find(x => x.id === S.ledOpen), b = bal(l), m = l.kind === 'm';
+    modal(`<h2>${b > 0 ? 'Borcu sil' : 'Sıfırla'}: ${esc(l.name)}</h2>
+      <p>Hazırkı ${b > 0 ? 'borc' : 'qalıq'}: <b>${money(Math.abs(b))}</b>. Bu qeyd ${m ? 'müştərinin' : 'tədarükçünün'} borcunu <b>0</b> edir.</p>
+      <p class="muted">Ödəniş sayılmır: kassaya, hesabata və "Borcdan qaytarılan"a düşmür. Məsələn, borc bağışlandıqda, səhv yazıldıqda və ya kağız dəftərdə artıq ödənildikdə istifadə edin.</p>
+      <label for="lcNote">Səbəb (istəyə bağlı)</label><input id="lcNote" placeholder="Məs: borc bağışlandı, köhnə hesab bağlandı">
+      <div class="acts"><button class="btn" data-act="mClose">Ləğv et</button><button class="btn warn" data-act="ledClearSave">${b > 0 ? 'Borcu sil' : 'Sıfırla'}</button></div>`); },
+  ledClearSave: async el => { const l = S.ledgers.find(x => x.id === S.ledOpen), b = bal(l); if (!b) return closeModal(); el.disabled = true;
+    await Store.merge('ledgers/' + l.id, { e: { [uid()]: { type: b > 0 ? 'odenis' : 'borc', amount: r2(Math.abs(b)), adj: true, noDate: true, note: mv('lcNote') || 'Borc yoxdur', at: Date.now(), by: S.me.name } } });
+    log('diger', (l.kind === 'm' ? 'Nisyə: ' : 'Tədarükçü: ') + l.name + ' — borc silindi', Math.abs(b)); closeModal(); toast(l.name + ': borc 0 edildi'); },
   ledDel: el => { const l = S.ledgers.find(x => x.id === S.ledOpen), e = l.e[el.dataset.id];
     confirmBox(`Bu qeyd silinsin? (${money(e.amount)})`, 'Sil', async () => {
       await Store.merge('ledgers/' + l.id, { e: { [el.dataset.id]: null } });
-      if (e.type === 'odenis' && e.day && l.kind === 'm') dayMerge(e.day, { inc: { [el.dataset.id]: null } });
+      if (e.type === 'odenis' && (e.day || e.incDay) && l.kind === 'm') dayMerge(e.day || e.incDay, { inc: { [el.dataset.id]: null } });
       log('diger', (l.kind === 'm' ? 'Nisyə: ' : 'Tədarükçü: ') + l.name + (e.type === 'borc' ? ' borc qeydi' : ' ödəniş qeydi'), e.amount); }); },
 
   bTab: el => { S.bTab = el.dataset.k; render(); },
