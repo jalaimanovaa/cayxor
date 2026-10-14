@@ -1115,7 +1115,9 @@ async function loadStaff(){ const d = S.stDay, ms = d.slice(0, 8) + '01', [y, m]
   S.stData = null; render(); const R = await loadDays(ms, me); S.stMonth = R; S.stData = R.days.find(x => x.day === d) || { day: d }; render(); }
 function vStaff(){
   const d = S.stDay, isToday = d === dayStr();
+  const goneN = S.staff.filter(u => u.left).length;
   let h = `<div class="daynav"><button class="btn sm" data-act="stDay" data-d="-1" aria-label="Əvvəlki gün">‹</button><b>${dayLabel(d)}</b><button class="btn sm" data-act="stDay" data-d="1" ${isToday ? 'disabled' : ''} aria-label="Növbəti gün">›</button></div>`;
+  h += `<button class="btn ghost sm" style="width:100%;margin-top:8px" data-act="oldGo">🗂 Köhnə işçilər${goneN ? ' (' + goneN + ')' : ''} ›</button>`;
   if (!S.stData) return h + '<div class="loading">Yüklənir…</div>';
   const doc = isToday && S.dayDoc ? S.dayDoc : S.stData, att = doc.att || {}, pays = ent(doc.pays);
   const active = S.staff.filter(u => !u.left), gone = S.staff.filter(u => u.left);
@@ -1139,10 +1141,12 @@ function vStaff(){
       return `<tr><td>${esc(u.name)}${u.left ? ' <small class="muted">(köhnə)</small>' : ''}</td><td class="r">${hw && halfN ? fullN + ' + ' + halfN + 'y' : days}</td><td class="r">${u.wage ? money(earned) : '—'}</td><td class="r">${money(paid)}</td><td class="r ${u.wage && earned - paid > 0 ? 'debt' : ''}">${u.wage ? money(earned - paid) : '—'}</td></tr>`; }).join('');
     h += `<div class="sec">${MONTHS[m - 1]} ayı üzrə</div><div class="card scroll"><table><thead><tr><th>İşçi</th><th class="r">Gün</th><th class="r">Hesablanan</th><th class="r">Verilib</th><th class="r">Qalıq</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="hint">Hesablanan = tam gün sayı × tam gün maaşı + yarım smen sayı × yarım smen maaşı. "10 + 3y" — 10 tam gün, 3 yarım smen. Maaşları işçinin ✎ düyməsindən yazın.</p></div>`; }
-  if (gone.length) h += `<details class="card oldst" style="margin-top:14px"><summary><b>Köhnə işçilər</b> <span class="tag">${gone.length}</span></summary>
+  h += `<details class="card oldst" id="oldst" style="margin-top:14px" ${S.oldOpen ? 'open' : ''}><summary data-act="oldTog"><b>🗂 Köhnə işçilər</b> <span class="tag">${gone.length}</span></summary>
+    ${gone.length ? '' : '<p class="muted" style="margin:8px 0 0">Hələ köhnə işçi yoxdur. İşçinin ✎ düyməsində "İşdən çıxdı" basanda bura düşəcək.</p>'}
     ${gone.slice().sort((a, b) => (b.leftAt || 0) - (a.leftAt || 0)).map(u => `<div class="li"><div class="grow"><div>${esc(u.name)}</div><small>${u.leftAt ? 'çıxıb ' + dayLabel(dayStr(new Date(u.leftAt))) : 'köhnə işçi'}${u.wage ? ', gündəlik ' + money(u.wage) : ''}</small></div>
-      <button class="btn sm" data-act="staffBack" data-id="${u.id}">Geri qaytar</button><button class="x" data-act="staffWipe" data-id="${u.id}" aria-label="Tam sil">×</button></div>`).join('')}
-    <p class="hint" style="margin:8px 0 0">Köhnə işçilərin keçmiş davamiyyəti və aldığı pullar hesabatlarda qalır. "Geri qaytar" ilə yenidən aktiv edə bilərsiniz.</p></details>`;
+      <button class="editic" data-act="staffForm" data-id="${u.id}" aria-label="Adı dəyiş" style="background:none">✎</button><button class="btn sm" data-act="staffBack" data-id="${u.id}">Geri qaytar</button><button class="x" data-act="staffWipe" data-id="${u.id}" aria-label="Tam sil">×</button></div>`).join('')}
+    <p class="hint" style="margin:8px 0 0">Köhnə işçilərin keçmiş davamiyyəti və aldığı pullar hesabatlarda qalır. "Geri qaytar" ilə yenidən aktiv edə bilərsiniz.</p>
+    <button class="btn ghost sm" style="width:100%;margin-top:8px" data-act="findDeleted">Əvvəl silinmiş işçiləri tap</button></details>`;
   return h + '<div style="height:12px"></div>';
 }
 
@@ -1951,6 +1955,17 @@ const ACT = {
   delStaff: el => { const u = staffById(el.dataset.id); if (u.role === 'admin' && S.staff.filter(x => x.role === 'admin').length < 2) return toast('Ən azı bir sahib qalmalıdır');
     if (u.role === 'admin') return confirmBox(`"${u.name}" silinsin? Keçmiş qeydlər qalır.`, 'Sil', () => { S.staff = S.staff.filter(x => x.id !== u.id); saveStaff(); render(); });
     confirmBox(`"${u.name}" köhnə işçilərə köçürülsün? Davamiyyəti və aldığı pullar qalır, istəsəniz sonra geri qaytara bilərsiniz.`, 'Köhnələrə köçür', () => { u.left = true; u.leftAt = Date.now(); saveStaff(); render(); toast(u.name + ' köhnə işçilərə köçürüldü'); }); },
+  oldGo: () => { S.oldOpen = true; render(); setTimeout(() => { const d = $('#oldst'); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 80); },
+  oldTog: (el, e) => { e && e.preventDefault(); S.oldOpen = !S.oldOpen; render(); },
+  findDeleted: async el => { el.disabled = true; el.textContent = 'Axtarılır…';
+    const known = new Set(S.staff.map(u => u.id)), found = {};
+    for (const { data: d } of await Store.all('days')) {
+      ent(d.pays).forEach(p => { if (p.staff && !known.has(p.staff)) { const f = found[p.staff] || (found[p.staff] = { name: p.name || 'Adsız işçi', last: 0 }); if (p.name) f.name = p.name; f.last = Math.max(f.last, p.at || 0); } });
+      Object.entries(d.att || {}).forEach(([id, a]) => { if (a && a.in && !known.has(id)) { const f = found[id] || (found[id] = { name: '', last: 0 }); f.last = Math.max(f.last, a.in); } }); }
+    let k = 0; const L = Object.entries(found).map(([id, f]) => [id, { ...f, name: f.name || 'Adı bilinməyən işçi ' + (++k) }]);
+    if (!L.length) { el.disabled = false; el.textContent = 'Əvvəl silinmiş işçiləri tap'; return toast('Əvvəl silinmiş işçi tapılmadı'); }
+    L.forEach(([id, f]) => S.staff.push({ id, name: f.name, role: 'none', pin: '', wage: 0, left: true, leftAt: f.last || Date.now() }));
+    saveStaff(); S.oldOpen = true; render(); toast(L.length + ' köhnə işçi bərpa olundu: ' + L.map(([, f]) => f.name).join(', ')); },
   staffBack: el => { const u = staffById(el.dataset.id); if (!u) return; u.left = false; delete u.leftAt; saveStaff(); render(); toast(u.name + ' yenidən aktivdir'); },
   staffWipe: el => { const u = staffById(el.dataset.id); if (!u) return;
     confirmBox(`"${u.name}" siyahıdan tam silinsin? Keçmiş hesabatlarda pul qeydləri qalır, amma adı aylıq cədvəldə görünməyəcək. Bu geri qaytarılmır.`, 'Tam sil', () => { S.staff = S.staff.filter(x => x.id !== u.id); saveStaff(); render(); toast('Silindi'); }); },
