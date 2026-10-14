@@ -466,6 +466,11 @@ input,textarea,select{font-size:max(16px,1em)}
 .help mark{background:var(--brass);color:#fff;border-radius:3px;padding:0 2px}
 .help details{scroll-margin-top:80px}
 .hquick .chip{min-height:38px;font-size:15px}
+.oldst summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:2px 0}
+.oldst summary::-webkit-details-marker{display:none}
+.oldst summary::after{content:'+';margin-left:auto;color:var(--green);font-size:22px}
+.oldst[open] summary::after{content:'−'}
+.oldst .li .btn{margin-right:4px}
 </style>
 </head>
 <body data-view="lock">
@@ -1113,7 +1118,8 @@ function vStaff(){
   let h = `<div class="daynav"><button class="btn sm" data-act="stDay" data-d="-1" aria-label="Əvvəlki gün">‹</button><b>${dayLabel(d)}</b><button class="btn sm" data-act="stDay" data-d="1" ${isToday ? 'disabled' : ''} aria-label="Növbəti gün">›</button></div>`;
   if (!S.stData) return h + '<div class="loading">Yüklənir…</div>';
   const doc = isToday && S.dayDoc ? S.dayDoc : S.stData, att = doc.att || {}, pays = ent(doc.pays);
-  h += '<div class="card" style="margin-top:12px;padding:4px 16px">' + (S.staff.length ? S.staff.map(u => { const a = att[u.id];
+  const active = S.staff.filter(u => !u.left), gone = S.staff.filter(u => u.left);
+  h += '<div class="card" style="margin-top:12px;padding:4px 16px">' + (active.length ? active.map(u => { const a = att[u.id];
     const hw = u.halfWage > 0, st = a && a.in ? (hw ? (a.half ? 'Yarım smen ✓' : 'Tam gün ✓') : 'Gəldi ✓') + (a.out ? ', getdi' : '') : 'Gəlməyib';
     const paid = sum(pays.filter(p => p.staff === u.id), p => p.amount);
     if (u.role === 'admin') return `<div class="srow"><div class="top"><div><b>${esc(u.name)}</b> <span class="tag">Sahib</span></div>
@@ -1128,11 +1134,15 @@ function vStaff(){
     pays.sort((a, b) => b.at - a.at).map(p => `<div class="li"><div class="grow"><div>${esc(p.name)} <span class="tag">${esc(p.kind)}</span></div><small>${hm(p.at)}${p.note ? ', ' + esc(p.note) : ''}${p.by ? ', verən ' + esc(p.by) : ''}</small></div>
       <div class="amt">${money(p.amount)}</div><button class="x" data-act="delPay" data-id="${p.id}" aria-label="Sil">×</button></div>`).join('') + '</div>';
   const M = S.stMonth; if (M) { const [y, m] = d.split('-').map(Number);
-    const rows = S.staff.filter(u => u.role !== 'admin').map(u => { const A = M.days.map(x => x.att && x.att[u.id]).filter(a => a && a.in), hw = u.halfWage > 0, halfN = hw ? A.filter(a => a.half).length : 0, fullN = A.length - halfN, days = A.length;
+    const rows = S.staff.filter(u => u.role !== 'admin' && (!u.left || M.days.some(x => x.att && x.att[u.id] && x.att[u.id].in) || M.pays.some(p => p.staff === u.id))).map(u => { const A = M.days.map(x => x.att && x.att[u.id]).filter(a => a && a.in), hw = u.halfWage > 0, halfN = hw ? A.filter(a => a.half).length : 0, fullN = A.length - halfN, days = A.length;
       const paid = sum(M.pays.filter(p => p.staff === u.id), p => p.amount), earned = (u.wage || 0) * fullN + (u.halfWage || 0) * halfN;
-      return `<tr><td>${esc(u.name)}</td><td class="r">${hw && halfN ? fullN + ' + ' + halfN + 'y' : days}</td><td class="r">${u.wage ? money(earned) : '—'}</td><td class="r">${money(paid)}</td><td class="r ${u.wage && earned - paid > 0 ? 'debt' : ''}">${u.wage ? money(earned - paid) : '—'}</td></tr>`; }).join('');
+      return `<tr><td>${esc(u.name)}${u.left ? ' <small class="muted">(köhnə)</small>' : ''}</td><td class="r">${hw && halfN ? fullN + ' + ' + halfN + 'y' : days}</td><td class="r">${u.wage ? money(earned) : '—'}</td><td class="r">${money(paid)}</td><td class="r ${u.wage && earned - paid > 0 ? 'debt' : ''}">${u.wage ? money(earned - paid) : '—'}</td></tr>`; }).join('');
     h += `<div class="sec">${MONTHS[m - 1]} ayı üzrə</div><div class="card scroll"><table><thead><tr><th>İşçi</th><th class="r">Gün</th><th class="r">Hesablanan</th><th class="r">Verilib</th><th class="r">Qalıq</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="hint">Hesablanan = tam gün sayı × tam gün maaşı + yarım smen sayı × yarım smen maaşı. "10 + 3y" — 10 tam gün, 3 yarım smen. Maaşları işçinin ✎ düyməsindən yazın.</p></div>`; }
+  if (gone.length) h += `<details class="card oldst" style="margin-top:14px"><summary><b>Köhnə işçilər</b> <span class="tag">${gone.length}</span></summary>
+    ${gone.slice().sort((a, b) => (b.leftAt || 0) - (a.leftAt || 0)).map(u => `<div class="li"><div class="grow"><div>${esc(u.name)}</div><small>${u.leftAt ? 'çıxıb ' + dayLabel(dayStr(new Date(u.leftAt))) : 'köhnə işçi'}${u.wage ? ', gündəlik ' + money(u.wage) : ''}</small></div>
+      <button class="btn sm" data-act="staffBack" data-id="${u.id}">Geri qaytar</button><button class="x" data-act="staffWipe" data-id="${u.id}" aria-label="Tam sil">×</button></div>`).join('')}
+    <p class="hint" style="margin:8px 0 0">Köhnə işçilərin keçmiş davamiyyəti və aldığı pullar hesabatlarda qalır. "Geri qaytar" ilə yenidən aktiv edə bilərsiniz.</p></details>`;
   return h + '<div style="height:12px"></div>';
 }
 
@@ -1315,6 +1325,7 @@ const HELP = [
   <li>Yeni tədarükçü yaradanda "köhnə borc" xanası proqramdan əvvəlki borc üçündür. Hesabata düşmür.</li></ul>`],
  ['👥 İşçilər', `<ul><li><b>Daha çox → İşçilər.</b> İşçi gələndə <b>"Gəldi"</b>, gedəndə <b>"Getdi"</b>. Saat yazılmır.</li>
   <li><b>Yarım smen:</b> işçinin ✎ düyməsində "Tam gün" (məs. 18 ₼) və "Yarım smen" (məs. 12 ₼) yazın. Onda iki düymə çıxır. Səhv seçsəniz "→ Tam gün / → Yarım smen" ilə dəyişin.</li>
+  <li><b>İşdən çıxan işçi:</b> ✎ → "İşdən çıxdı". İşçi silinmir, aşağıdakı <b>Köhnə işçilər</b> bölməsinə düşür. Keçmiş davamiyyəti və pulları qalır. "Geri qaytar" ilə yenidən aktiv edin, × ilə tam silin.</li>
   <li><b>Pul ver:</b> gündəlik, avans, maaş, bonus. Məbləğ o günün növünə görə özü dolur.</li>
   <li><b>Aylıq cədvəl:</b> hər işçinin gün sayı ("10 + 3y" = 10 tam, 3 yarım), hesablanan, verilən və qalıq.</li>
   <li>Gün dəyişmək üçün yuxarıdakı ‹ › oxlarından istifadə edin. Səhv qeydi "Sıfırla" ilə silin.</li></ul>`],
@@ -1700,7 +1711,7 @@ const ACT = {
 
   pane: el => { S.pane = el.dataset.p; window.scrollTo(0, 0); render(); },
   ownClose: () => { const tab = S.tabs.own; if (!tab?.items?.length) return; S.ownWho = S.me.name;
-    const who = [S.me.name, ...S.staff.filter(u => u.id !== S.me.id).map(u => u.name)], c = sum(tab.items, l => costOf(prodById(l.pid)) * l.qty);
+    const who = [S.me.name, ...S.staff.filter(u => u.id !== S.me.id && !u.left).map(u => u.name)], c = sum(tab.items, l => costOf(prodById(l.pid)) * l.qty);
     modal(`<h2>Özümüz üçün</h2><div class="muted">${tab.items.map(l => esc(l.name) + ' × ' + l.qty).join(', ')}</div>
       <p>Menyu qiyməti ilə: <b>${money(tabTotal(tab))}</b>${c ? ', maya ~' + money(c) : ''}</p>
       <label>Kim götürdü</label><div class="chips" id="owSeg" style="flex-wrap:wrap">${who.map((n, i) => `<button class="chip ${i === 0 ? 'on' : ''}" data-act="ownWho" data-n="${esc(n)}">${esc(n)}</button>`).join('')}<button class="chip" data-act="ownWho" data-n="Qonaq (pulsuz)">Qonaq (pulsuz)</button></div>
@@ -1932,13 +1943,17 @@ const ACT = {
       <div class="two"><div><label for="sfWage">Tam gün ₼</label><input id="sfWage" inputmode="decimal" value="${u?.wage || ''}" placeholder="Məs: 18"></div>
       <div><label for="sfHalf">Yarım smen ₼</label><input id="sfHalf" inputmode="decimal" value="${u?.halfWage || ''}" placeholder="Məs: 12"></div></div>
       <p class="hint">Yarım smen məbləği yazsanız, bu işçidə "Gəldi" yerinə "Tam gün" və "Yarım smen" düymələri çıxacaq. Yarım smen gəlmirsə, boş saxlayın.</p>
-      <div class="acts">${u && u.id !== S.me.id ? `<button class="btn warn" data-act="delStaff" data-id="${u.id}">Sil</button>` : '<button class="btn" data-act="mClose">Ləğv et</button>'}<button class="btn pri" data-act="saveStaffF" data-id="${u?.id || ''}">Yadda saxla</button></div>`); },
+      <div class="acts">${u && u.id !== S.me.id ? `<button class="btn warn" data-act="delStaff" data-id="${u.id}">${u.role === 'admin' ? 'Sil' : 'İşdən çıxdı'}</button>` : '<button class="btn" data-act="mClose">Ləğv et</button>'}<button class="btn pri" data-act="saveStaffF" data-id="${u?.id || ''}">Yadda saxla</button></div>`); },
   saveStaffF: el => { const name = mv('sfName'), wage = r2(num(mv('sfWage'))), halfWage = r2(num(mv('sfHalf'))); if (!name) return toast('Adı yazın');
     const u = el.dataset.id ? staffById(el.dataset.id) : null;
     if (u) Object.assign(u, { name, wage, halfWage }); else S.staff.push({ id: uid(), name, role: 'none', pin: '', wage, halfWage });
     saveStaff(); closeModal(); render(); toast('Yadda saxlandı'); },
   delStaff: el => { const u = staffById(el.dataset.id); if (u.role === 'admin' && S.staff.filter(x => x.role === 'admin').length < 2) return toast('Ən azı bir sahib qalmalıdır');
-    confirmBox(`"${u.name}" silinsin? Keçmiş qeydlər qalır.`, 'Sil', () => { S.staff = S.staff.filter(x => x.id !== u.id); saveStaff(); render(); }); },
+    if (u.role === 'admin') return confirmBox(`"${u.name}" silinsin? Keçmiş qeydlər qalır.`, 'Sil', () => { S.staff = S.staff.filter(x => x.id !== u.id); saveStaff(); render(); });
+    confirmBox(`"${u.name}" köhnə işçilərə köçürülsün? Davamiyyəti və aldığı pullar qalır, istəsəniz sonra geri qaytara bilərsiniz.`, 'Köhnələrə köçür', () => { u.left = true; u.leftAt = Date.now(); saveStaff(); render(); toast(u.name + ' köhnə işçilərə köçürüldü'); }); },
+  staffBack: el => { const u = staffById(el.dataset.id); if (!u) return; u.left = false; delete u.leftAt; saveStaff(); render(); toast(u.name + ' yenidən aktivdir'); },
+  staffWipe: el => { const u = staffById(el.dataset.id); if (!u) return;
+    confirmBox(`"${u.name}" siyahıdan tam silinsin? Keçmiş hesabatlarda pul qeydləri qalır, amma adı aylıq cədvəldə görünməyəcək. Bu geri qaytarılmır.`, 'Tam sil', () => { S.staff = S.staff.filter(x => x.id !== u.id); saveStaff(); render(); toast('Silindi'); }); },
   payStaff: el => { const u = staffById(el.dataset.id); S.pd = { sid: u.id, kind: 'Gündəlik' };
     const doc = S.stDay === dayStr() && S.dayDoc ? S.dayDoc : S.stData, a = doc && doc.att && doc.att[u.id], half = a && a.half && u.halfWage > 0, defAmt = half ? u.halfWage : u.wage;
     modal(`<h2>${esc(u.name)}: pul ver</h2><p class="muted">${dayLabel(S.stDay)}${a && a.in && u.halfWage > 0 ? (half ? ', yarım smen' : ', tam gün') : ''}</p><label for="psAmt">Məbləğ ₼</label><input id="psAmt" inputmode="decimal" value="${defAmt || ''}">
