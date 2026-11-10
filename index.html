@@ -40,20 +40,20 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') { window.add
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
-  --bg:#EAEFEA; --surface:#FFFFFF; --surface2:#DFE6DF; --ink:#18261F; --muted:#5B6B62; --line:#CFD9D0;
+  --bg:#EAEFEA; --surface:#FFFFFF; --surface2:#DFE6DF; --ink:#18261F; --muted:#4A5A51; --line:#CFD9D0; --ok-bg:#D8EEE1; --ok-ink:#0B3D31; --red-ink:#5E1710;
   --green:#0E5A48; --green-ink:#FFFFFF; --brass:#B47C1C; --brass-bg:#F5E4BD; --brass-ink:#4E3505;
   --red:#AE3528; --red-bg:#F7DEDA; --shadow:0 1px 0 rgba(20,40,30,.06);
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#0F1613; --surface:#18221D; --surface2:#233029; --ink:#E3EBE6; --muted:#93A39A; --line:#2C3A33;
+    --bg:#0F1613; --surface:#18221D; --surface2:#233029; --ink:#E3EBE6; --muted:#A9B9B0; --line:#2C3A33; --ok-bg:#12332A; --ok-ink:#BFE8D8; --red-ink:#F6C6BF;
     --green:#46A98B; --green-ink:#06130E; --brass:#E0A43C; --brass-bg:#3B2D12; --brass-ink:#F5DCA8;
     --red:#E46A5C; --red-bg:#3A1C18; --shadow:none; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0F1613; --surface:#18221D; --surface2:#233029; --ink:#E3EBE6; --muted:#93A39A; --line:#2C3A33;
+  --bg:#0F1613; --surface:#18221D; --surface2:#233029; --ink:#E3EBE6; --muted:#A9B9B0; --line:#2C3A33; --ok-bg:#12332A; --ok-ink:#BFE8D8; --red-ink:#F6C6BF;
   --green:#46A98B; --green-ink:#06130E; --brass:#E0A43C; --brass-bg:#3B2D12; --brass-ink:#F5DCA8;
   --red:#E46A5C; --red-bg:#3A1C18; --shadow:none; color-scheme:dark;
 }
@@ -475,6 +475,64 @@ input,textarea,select{font-size:max(16px,1em)}
 .oldst summary::after{content:'+';margin-left:auto;color:var(--green);font-size:22px}
 .oldst[open] summary::after{content:'−'}
 .oldst .li .btn{margin-right:4px}
+
+/* ---- dizayn yeniləməsi ---- */
+.tile.busy.ok{background:var(--ok-bg);border-color:var(--green);color:var(--ok-ink)}
+.tile.busy.ok small{color:var(--ok-ink)}
+.tile.busy.ok .gl .glass{stroke:var(--green)}.tile.busy.ok .gl .tea{fill:var(--green)}
+.tile.busy.late{background:var(--red-bg);border-color:var(--red);color:var(--red-ink)}
+.tile.busy.late small{color:var(--red-ink)}
+.tile.busy.late .gl .glass{stroke:var(--red)}.tile.busy.late .gl .tea{fill:var(--red)}
+.tile .dur{font-weight:600;opacity:1!important}
+.lgd{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.lgd i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.lgd i.g{background:var(--green)}.lgd i.o{background:var(--brass)}.lgd i.r{background:var(--red)}
+.dstrip{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 4px}
+@media (min-width:640px){.dstrip{grid-template-columns:repeat(4,1fr)}}
+.dstrip>div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.dstrip small{display:block;font-size:13px}
+.dstrip b{font-size:20px;display:block;margin-top:2px}
+.dstrip b.debt{color:var(--red)}
+.cd{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
+.pbtn{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.mgh{margin:20px 0 0;font-size:15px;color:var(--muted);font-weight:600;letter-spacing:.2px}
+.mgh+.tiles{margin-top:8px}
+.tiles{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))!important}
+.dstrip>div:last-child:nth-child(odd){grid-column:1/-1}
+.net{position:fixed;top:calc(5px + env(safe-area-inset-top,0px));right:5px;width:9px;height:9px;border-radius:50%;background:#2E9E6B;z-index:60;box-shadow:0 0 0 2px var(--bg)}
+.net.off{background:#E08A1E}.net.loc{background:#8A958F}
+#toast.has-undo{pointer-events:auto}
+#toast .undo{margin-left:12px;background:transparent;border:0;color:var(--brass);font-weight:700;font-size:15px;padding:4px 2px;text-decoration:underline}
+.mgh+.tiles button,.tiles button{min-height:104px}
+[data-act=oldTog]{min-height:44px}
+[data-act=salesDay]{min-width:30px}
+input[data-keep]{font-size:16px!important}
+
+/* ---- nisyə, zona, hesabat ---- */
+.zhd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:22px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.zhd b{font-size:17px}.zhd small{font-size:14px}
+.ownsep{margin-top:30px;padding-top:6px}
+.nsum-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.nsum-n{text-align:center;background:var(--red-bg);border-radius:12px;padding:8px 16px;color:var(--red)}
+.nsum-n b{font-size:24px;display:block;line-height:1.1}.nsum-n small{color:var(--red)}
+.nsum-big{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:15px}
+.nrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-bottom:8px;box-shadow:var(--shadow)}
+.nrow .grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.nrow .grow b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nrow .namt{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
+.nrow .namt b{font-size:18px}
+.nrow .namt .tag{margin:0}
+.avt{width:44px;height:44px;border-radius:50%;background:var(--surface2);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;flex:none}
+.avt.old{background:var(--red-bg);color:var(--red)}.avt.ok{background:var(--ok-bg);color:var(--green)}.avt.big{width:52px;height:52px;font-size:22px}
+.eic{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.eic.b{background:var(--red-bg);color:var(--red)}.eic.p{background:var(--ok-bg);color:var(--green)}
+.stat.inc .v{color:var(--green)}.stat.exp .v{color:var(--red)}
+.stat.big .cmp{color:inherit!important;opacity:.92}
+.cmp{display:block;font-size:13px;font-weight:600;margin-top:2px}.cmp.good{color:var(--green)}.cmp.bad{color:var(--red)}.cmp.flat{color:var(--muted)}
+tr[data-act=staffDays]{cursor:pointer}
+.dayrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.dayrow.off{color:var(--muted)}
+.dayrow .st{font-weight:600}.dayrow .st.y{color:var(--green)}
 </style>
 </head>
 <body data-view="lock">
@@ -513,7 +571,14 @@ function dayLabel(ds){ const [y, m, d] = ds.split('-').map(Number); const dt = n
 const hm = ts => { const d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
 function mins(ts){ const d = Math.max(0, Math.floor((Date.now() - ts) / 60000));
   return d < 60 ? d + ' dəq' : Math.floor(d / 60) + ' saat' + (d % 60 ? ' ' + (d % 60) + ' dəq' : ''); }
-function toast(msg){ const t = $('#toast'); t.innerHTML = '<div>' + esc(msg) + '</div>'; clearTimeout(toast.t); toast.t = setTimeout(() => t.innerHTML = '', 2800); }
+const fmtDur = ts => { const m = Math.max(0, Math.floor((Date.now() - ts) / 60000)); return m < 60 ? m + ' dəq' : Math.floor(m / 60) + 's' + (m % 60 ? ' ' + (m % 60) + 'd' : ''); };
+const CATCOL = ['#0E7C66', '#B47C1C', '#C2503E', '#3F6FB5', '#8A5BA8', '#6B7F2A', '#2B8FA3', '#A5446F'];
+const catColor = (cats, c) => CATCOL[Math.max(0, cats.indexOf(c || 'Digər')) % CATCOL.length];
+const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} };
+function undoToast(msg, onUndo, onExpire){ const t = $('#toast'); clearTimeout(toast.t); clearTimeout(undoToast.t); undoToast.fn = onUndo;
+  t.classList.add('has-undo'); t.innerHTML = '<div>' + esc(msg) + '<button class="undo" data-act="undo">Geri al</button></div>';
+  undoToast.t = setTimeout(() => { t.innerHTML = ''; t.classList.remove('has-undo'); undoToast.fn = null; onExpire && onExpire(); }, 6000); }
+function toast(msg){ const t = $('#toast'); t.classList.remove('has-undo'); t.innerHTML = '<div>' + esc(msg) + '</div>'; clearTimeout(toast.t); toast.t = setTimeout(() => t.innerHTML = '', 2800); }
 function onDbErr(e){ const c = e && e.code;
   if (c === 'invalid_argument') toast('Bu dəyişikliyi etməyə icazəniz yoxdur');
   else if (c === 'quota_exceeded') toast('Yaddaş dolub. Köhnə qeydləri silin.');
@@ -611,12 +676,12 @@ const S = window.S = {
   dayDoc: null, legacyToday: [], today: dayStr(), unsubDay: null,
   me: null, pin: '', pinErr: '', pinFails: 0, pinLockUntil: 0,
   view: 'tables', zone: '', edit: false, open: null, cat: '', q: '',
-  buyP: { k: 'today' }, buys: null, bTab: 'buy', bSel: '', bQty: '', bSum: '', bSumAuto: true, bDate: '', bSup: '', bDebt: false,
+  buyP: { k: 'today' }, buys: null, bTab: 'exp', bSel: '', bQty: '', bSum: '', bSumAuto: true, bDate: '', bSup: '', bDebt: false,
   xSel: '', xSum: '', xNote: '', xDate: '',
   repP: { k: 'today' }, rep: null, cmp: null, openChk: null, dl: null,
   salesP: { k: 'month' }, salesData: null, shiftP: { k: 'week' }, shiftData: null, openShift: null, logP: { k: 'today' }, logs: null, logKind: '',
   stDay: dayStr(), stData: null, stMonth: null, fq: {},
-  ledOpen: null, ledKind: 'm', nq: '', draft: null, pd: null
+  ledOpen: null, ledKind: 'm', nq: '', nSort: 'debt', draft: null, pd: null
 };
 const ready = () => ['settings','tables','products','stock','stockq','shop','staff','tabs','ledgers','day'].every(k => S.loaded[k]);
 const isAdmin = () => S.me && S.me.role === 'admin';
@@ -690,7 +755,10 @@ const perLabel = r => r.from === r.to ? dayLabel(r.from) : dayLabel(r.from) + ' 
 function perChips(key){ const p = S[key + 'P'];
   return `<div class="chips">` + [['today','Bu gün'],['yest','Dünən'],['yest2','Sırağagün'],['week','Bu həftə'],['month','Bu ay'],['custom','Tarix seç']]
     .map(([k, l]) => `<button class="chip ${p.k === k ? 'on' : ''}" data-act="per" data-key="${key}" data-k="${k}">${l}</button>`).join('') + '</div>' +
-    (p.k === 'custom' ? (r => `<div class="daterow"><input type="date" data-chg="perd" data-key="${key}" data-f="from" value="${r.from}" aria-label="Başlanğıc"><span>—</span><input type="date" data-chg="perd" data-key="${key}" data-f="to" value="${r.to}" aria-label="Son"></div>`)(period(p)) : ''); }
+    (p.k === 'custom' ? (r => { const one = (p.mode || (r.from === r.to ? 'one' : 'range')) === 'one';
+      return `<div class="seg" style="margin-top:10px">${[['one','Bir gün'],['range','Tarix aralığı']].map(([k, t]) => `<button class="${(one ? 'one' : 'range') === k ? 'on' : ''}" data-act="perMode" data-key="${key}" data-m="${k}">${t}</button>`).join('')}</div>` +
+        (one ? `<div class="daterow"><input type="date" data-chg="perd" data-key="${key}" data-f="one" value="${r.from}" max="${dayStr()}" aria-label="Tarix"></div>`
+          : `<div class="daterow"><input type="date" data-chg="perd" data-key="${key}" data-f="from" value="${r.from}" aria-label="Başlanğıc"><span>—</span><input type="date" data-chg="perd" data-key="${key}" data-f="to" value="${r.to}" aria-label="Son"></div>`); })(period(p)) : ''); }
 async function loadDays(from, to){
   const [ds, legacy] = await Promise.all([Store.range('days', 'day', from, to), Store.range('sales', 'day', from, to)]);
   return { days: ds, checks: [...ds.flatMap(checksOf), ...legacy.map(x => ({ ...x, legacy: true }))],
@@ -783,7 +851,7 @@ function draw(){
   if (!isAdmin() && !WORKER_VIEWS.includes(S.view)) S.view = 'tables';
   if (!isAdmin() && S.view === 'led' && S.ledKind !== 'm') S.view = 'nisye';
   document.body.dataset.view = S.view; saveView();
-  $('#top').innerHTML = '<div class="wrap bar">' + topBar() + '</div>';
+  $('#top').innerHTML = '<div class="wrap bar">' + topBar() + '</div>' + netDot();
   const items = isAdmin() ? [['tables','Masalar'],['nisye','Nisyə'],['buys','Bazarlıq'],['rep','Hesabat'],['more','Daha çox']] : [['tables','Masalar'],['nisye','Nisyə']];
   const nk = S.view === 'tab' ? 'tables' : MORE_SUB.includes(S.view) ? 'more' : S.view === 'led' ? (S.ledKind === 't' ? 'more' : 'nisye') : S.view;
   $('#nav').innerHTML = `<div class="in" style="grid-template-columns:repeat(${items.length},1fr)">` + items.map(([k, l]) => `<button class="${nk === k ? 'on' : ''}" data-act="go" data-v="${k}">${IC[k]}${l}</button>`).join('') + '</div>';
@@ -791,6 +859,7 @@ function draw(){
   $('#app').innerHTML = (V[S.view] || vTables)() + resetFor(S.view);
   restore(); applyFilters(); helpFilter();
 }
+const netDot = () => { const on = navigator.onLine !== false, loc = Store.mode !== 'fb'; return `<i class="net ${!on ? 'off' : loc ? 'loc' : ''}" title="${!on ? 'İnternet yoxdur: qeydlər sonra göndəriləcək' : loc ? 'Yalnız bu telefonda' : 'Əlaqə var'}"></i>`; };
 const meChip = () => `<button class="mechip" data-act="meMenu" aria-label="Hesab">${esc(S.me.name)}</button>`;
 const backBtn = (v, l) => `<button class="btn ghost sm" data-act="go" data-v="${v}" aria-label="${l}">‹<span class="bl"> ${l}</span></button>`;
 function topBar(){
@@ -870,13 +939,18 @@ function vTables(){
   if (zones.length > 1) h += '<div class="chips" style="margin-top:14px">' + ['', ...zones].map(z =>
     `<button class="chip ${S.zone === z ? 'on' : ''}" data-act="zone" data-z="${esc(z)}">${z ? esc(z) : 'Hamısı'}</button>`).join('') + '</div>';
   h += `<div class="status"><span><span class="dot"></span>${busy} dolu</span><span class="muted"><span class="dot free"></span>${S.tables.length - busy} boş</span>
-    ${busy ? `<span class="muted">Açıq hesablar: ${money(openSum)}</span>` : ''}</div>`;
+    ${busy ? `<span class="lgd"><span><i class="g"></i>2s-dək</span><span><i class="o"></i>2–4s</span><span><i class="r"></i>4s+</span></span>` : ''}</div>`;
+  if (isAdmin() && !S.edit) { const tc0 = todayChecks(), debt = sum(S.ledgers.filter(l => l.kind === 'm').map(l => bal(l)).filter(b => b > 0), b => b);
+    h = `<div class="dstrip"><div><small>Bu gün satış</small><b>${money(sum(tc0, x => x.total))}</b></div><div><small>Çek sayı</small><b>${tc0.length}</b></div><div><small>Açıq hesablar</small><b>${money(openSum)}</b></div>${debt > 0 ? `<div><small>Nisyə (ümumi)</small><b class="debt">${money(debt)}</b></div>` : ''}</div>` + h; }
   const edit = S.edit && isAdmin();
-  h += '<div class="grid">' + S.tables.filter(t => !S.zone || t.zone === S.zone).map(t => tile(t, edit)).join('') +
-    (edit ? '<button class="tile add" data-act="addTable">+ Masa</button><button class="tile add" data-act="addMany">+ Bir neçə masa</button>' : '') + '</div>';
-  if (!edit) { const ot = S.tabs.own, ob = ot?.items?.length;
-    h += `<button class="tile ownt ${ob ? 'busy' : ''}" data-act="openT" data-id="own"><span class="nm">Bizim masa</span><span class="info">${ob ? `<b>${money(tabTotal(ot))}</b><small>${ot.items.reduce((a, l) => a + l.qty, 0)} ədəd, satış deyil</small>` : '<small>Özümüz üçün götürdüklərimizi bura yazın. Satışa düşmür, anbardan çıxılır.</small>'}</span></button>`; }
-  if (!edit) { const L = S.shift && S.shift.last; h += `<button class="btn pri shiftbtn" data-act="shiftAsk">🌙 Növbəni bağla</button>${L ? `<button class="btn ghost sm" style="width:100%;margin-top:8px" data-act="go" data-v="shifts">Son növbə bağlanıb: ${fmtTs(L.at)}${L.by ? ', ' + esc(L.by) : ''} · Bütün növbələr ›</button>` : '<button class="btn ghost sm" style="width:100%;margin-top:8px" data-act="go" data-v="shifts">Bütün növbələr ›</button>'}`; }
+  const vis = S.tables.filter(t => !S.zone || t.zone === S.zone);
+  if (edit || zones.length === 0) h += '<div class="grid">' + vis.map(t => tile(t, edit)).join('') + (edit ? '<button class="tile add" data-act="addTable">+ Masa</button><button class="tile add" data-act="addMany">+ Bir neçə masa</button>' : '') + '</div>';
+  else { const order = [...zones, ''], grp = z => vis.filter(t => (t.zone || '') === z);
+    order.forEach(z => { const L = grp(z); if (!L.length) return; const bz = L.filter(t => S.tabs[t.id]?.items?.length).length;
+      h += `<div class="zhd"><b>${z ? esc(z) : 'Digər'}</b><small>${bz} dolu / ${L.length} masa</small></div><div class="grid">${L.map(t => tile(t, false)).join('')}</div>`; }); }
+  if (!edit) { const L = S.shift && S.shift.last; h += `<button class="btn pri shiftbtn" data-act="shiftAsk">🌙 Növbəni bağla</button>${L ? `<button class="btn ghost sm" style="width:100%;margin-top:8px" data-act="go" data-v="shifts">Son növbə bağlanıb: ${fmtTs(L.at)}${L.by ? ', ' + esc(L.by) : ''} · Bütün növbələr ›</button>` : '<button class="btn ghost sm" style="width:100%;margin-top:8px" data-act="go" data-v="shifts">Bütün növbələr ›</button>'}`;
+    const ot = S.tabs.own, ob = ot?.items?.length;
+    h += `<div class="ownsep"><div class="zhd" style="margin-top:0"><b>Özümüz üçün</b><small>satışa düşmür</small></div><button class="tile ownt ${ob ? 'busy' : ''}" data-act="openT" data-id="own"><span class="nm">Bizim masa</span><span class="info">${ob ? `<b>${money(tabTotal(ot))}</b><small>${ot.items.reduce((a, l) => a + l.qty, 0)} ədəd, satış deyil</small>` : '<small>Özümüz üçün götürdüklərimizi bura yazın. Anbardan çıxılır.</small>'}</span></button></div>`; }
   if (edit) h += '<p class="muted" style="margin-top:14px">Adı dəyişmək üçün masanın adına vurun. ‹ və › ilə sıranı dəyişin. Dolu masanı silmək olmur.</p>';
   return h;
 }
@@ -886,8 +960,9 @@ function tile(t, edit){
     <div class="ed"><button data-act="mvT" data-id="${t.id}" data-d="-1" aria-label="Əvvələ">‹</button><button data-act="mvT" data-id="${t.id}" data-d="1" aria-label="Sona">›</button>
     <button class="x" data-act="delTable" data-id="${t.id}">Sil</button></div></div>`;
   const cnt = busy ? tab.items.reduce((s, l) => s + l.qty, 0) : 0;
-  return `<button class="tile ${busy ? 'busy' : ''}" data-act="openT" data-id="${t.id}">${glass()}<span class="nm">${esc(tab && tab.label || t.name)}${tab && tab.label ? `<small class="orig">${esc(t.name)}</small>` : ''}</span>
-    <span class="info">${busy ? `<b>${money(tabTotal(tab))}</b><small>${mins(tab.openedAt)}, ${cnt} ədəd${tab.by ? ', ' + esc(tab.by) : ''}</small>` : `<small>${esc(t.zone || 'Boş')}</small>`}</span></button>`;
+  const ageH = busy && tab.openedAt ? (Date.now() - tab.openedAt) / 3600000 : 0, tone = !busy ? '' : ageH >= 4 ? 'late' : ageH >= 2 ? '' : 'ok';
+  return `<button class="tile ${busy ? 'busy' : ''} ${tone}" data-act="openT" data-id="${t.id}">${glass()}<span class="nm">${esc(tab && tab.label || t.name)}${tab && tab.label ? `<small class="orig">${esc(t.name)}</small>` : ''}</span>
+    <span class="info">${busy ? `<b>${money(tabTotal(tab))}</b><small><span class="dur">${tab.openedAt ? fmtDur(tab.openedAt) : ''}</span>, ${cnt} ədəd${tab.by ? ', ' + esc(tab.by) : ''}</small>` : `<small>${esc(t.zone || 'Boş')}</small>`}</span></button>`;
 }
 
 /* ---------- open table ---------- */
@@ -900,10 +975,10 @@ function vTab(){
   const prods = S.products.map((p, i) => [p, i]).filter(([p]) => (!S.cat || (p.cat || 'Digər') === S.cat) && (!q || p.name.toLowerCase().includes(q))).sort((a, b) => (S.pop[b[0].id] || 0) - (S.pop[a[0].id] || 0) || a[1] - b[1]).map(x => x[0]);
   const inTab = {}; tab.items.forEach(l => inTab[l.pid] = (inTab[l.pid] || 0) + l.qty);
   let left = `<div class="left"><input id="q" type="search" placeholder="Məhsul axtar" value="${esc(S.q)}" data-inp="q" autocomplete="off">
-    <div class="chips wrap" style="margin-top:10px">${['', ...cats].map(c => `<button class="chip ${S.cat === c ? 'on' : ''}" data-act="cat" data-c="${esc(c)}">${c ? esc(c) : 'Hamısı'}</button>`).join('')}</div>`;
+    <div class="chips wrap" style="margin-top:10px">${['', ...cats].map(c => `<button class="chip ${S.cat === c ? 'on' : ''}" data-act="cat" data-c="${esc(c)}">${c ? `<i class="cd" style="background:${catColor(cats, c)}"></i>${esc(c)}` : 'Hamısı'}</button>`).join('')}</div>`;
   if (!S.products.length) left += `<div class="pgrid"><button class="pbtn pnew" data-act="customItem"><span class="n">+ Menyuda olmayan məhsul</span><span class="p">ad və qiymət yazın</span></button></div><div class="card empty" style="margin-top:12px"><h2>Menyu boşdur</h2><p>Əvvəlcə məhsulları əlavə edin.</p>${isAdmin() ? '<button class="btn pri" data-act="go" data-v="products">Menyuya keç</button>' : ''}</div>`;
   else { const pb = p => { const out = p.track && (p.stock || 0) <= 0;
-      return `<button class="pbtn ${out ? 'out' : ''}" data-act="addItem" data-id="${p.id}"><span class="n">${esc(p.name)}</span><span class="p">${money(p.price)}</span>${inTab[p.id] ? `<span class="q">${inTab[p.id]}</span><span class="mn" data-act="subItem" data-id="${p.id}" aria-label="Azalt">−</span>` : ''}</button>`; };
+      return `<button class="pbtn ${out ? 'out' : ''}" style="border-left:5px solid ${catColor(cats, p.cat)}" data-act="addItem" data-id="${p.id}"><span class="n">${esc(p.name)}</span><span class="p">${money(p.price)}</span>${inTab[p.id] ? `<span class="q">${inTab[p.id]}</span><span class="mn" data-act="subItem" data-id="${p.id}" aria-label="Azalt">−</span>` : ''}</button>`; };
     const showTop = !S.cat && !q, top = showTop ? prods.filter(p => (S.pop[p.id] || 0) > 0).slice(0, 10) : [], topIds = new Set(top.map(p => p.id));
     left += '<div class="pgrid">' + (top.length ? '<div class="pgh">⭐ Ən çox satılanlar</div>' + top.map(pb).join('') + '<div class="pgh">Bütün menyu</div>' : '') +
       prods.filter(p => !topIds.has(p.id)).map(pb).join('') + `<button class="pbtn pnew" data-act="customItem"><span class="n">+ Menyuda olmayan məhsul</span><span class="p">${S.q.trim() && !prods.length ? '“' + esc(S.q.trim()) + '” əlavə et' : 'ad və qiymət yazın'}</span></button>` + '</div>'; }
@@ -941,14 +1016,27 @@ function ledList(kind){ return S.ledgers.filter(l => l.kind === kind).map(l => (
 function ledRows(L, kind){
   return L.map(l => `<button class="rowbtn li" data-act="openLed" data-id="${l.id}" data-k="${kind}"><div class="grow"><div>${esc(l.name)}</div>${l.phone ? `<small>${esc(l.phone)}</small>` : ''}</div>
     <div class="amt ${l.b > 0 ? 'debt' : 'muted'}">${l.b > 0 ? money(l.b) : l.b < 0 ? 'artıq ' + money(-l.b) : 'borc yoxdur'}</div></button>`).join(''); }
+const lastDebtAt = l => { const E = ent(l.e).filter(x => x.type === 'borc' && !x.adj); return E.length ? Math.max(...E.map(x => x.at || 0)) : 0; };
+const agoTxt = ts => { const d = Math.floor((Date.now() - ts) / 86400000); return d <= 0 ? 'bu gün' : d === 1 ? 'dünən' : d + ' gün əvvəl'; };
+const initialOf = n => (String(n || '?').trim()[0] || '?').toLocaleUpperCase('az');
+function nrow(l){ const old = l.b > 0 && l.last && (Date.now() - l.last) / 86400000 >= 30;
+  return `<button class="nrow" data-act="openLed" data-id="${l.id}" data-k="m"><span class="avt ${l.b <= 0 ? 'ok' : old ? 'old' : ''}">${esc(initialOf(l.name))}</span>
+    <span class="grow"><b>${esc(l.name)}</b><small>${[l.phone ? esc(l.phone) : '', l.b > 0 && l.last ? 'son nisyə: ' + agoTxt(l.last) : ''].filter(Boolean).join(' · ') || '&nbsp;'}</small></span>
+    <span class="namt">${l.b > 0 ? `<b class="debt">${money(l.b)}</b>` : `<span class="muted">${l.b < 0 ? 'artıq ' + money(-l.b) : 'borc yoxdur'}</span>`}${old ? '<span class="tag low">30+ gün</span>' : ''}</span></button>`; }
 function vNisye(){
-  const L = ledList('m'), q = S.nq.trim().toLowerCase(), F = L.filter(l => !q || l.name.toLowerCase().includes(q) || (l.phone || '').includes(q));
-  const debtors = L.filter(l => l.b > 0);
-  let h = `<div class="card" style="margin-top:14px"><small>Ümumi nisyə</small><div class="bigbal debt" style="margin-bottom:0">${money(sum(debtors, l => l.b))}</div><small>${debtors.length} nəfər borcludur</small></div>`;
-  if (!L.length) return h + `<div class="card empty" style="margin-top:14px"><h2>Nisyə hələ yoxdur</h2><p>Hesabı bağlayanda "Nisyə" seçin, müştərini seçin və ya yenisini yaradın. Kağız dəftərdəki köhnə borcları "+ Müştəri" ilə köçürə bilərsiniz.</p></div>`;
-  h += `<input id="nq" type="search" placeholder="Ad və ya telefon axtar" value="${esc(S.nq)}" data-inp="nq" style="margin-top:14px" autocomplete="off">`;
-  return h + `<div class="card" style="padding:4px 16px;margin-top:12px">${ledRows(F, 'm') || '<p class="muted">Tapılmadı.</p>'}</div>`;
-}
+  const L = ledList('m').map(l => ({ ...l, last: lastDebtAt(l) })), q = S.nq.trim().toLowerCase(), F = L.filter(l => !q || l.name.toLowerCase().includes(q) || (l.phone || '').includes(q));
+  const debtors = L.filter(l => l.b > 0), big = debtors.slice().sort((x, y) => y.b - x.b)[0];
+  if (!L.length) return `<div class="card" style="margin-top:14px"><small>Ümumi nisyə</small><div class="bigbal debt" style="margin-bottom:0">${money(0)}</div></div><div class="card empty" style="margin-top:14px"><h2>Nisyə hələ yoxdur</h2><p>Hesabı bağlayanda "Nisyə" seçin, müştərini seçin və ya yenisini yaradın. Kağız dəftərdəki köhnə borcları "+ Müştəri" ilə köçürə bilərsiniz.</p></div>`;
+  let h = `<div class="card nsum" style="margin-top:14px"><div class="nsum-top"><div><small>Ümumi nisyə</small><div class="bigbal debt" style="margin:2px 0 0">${money(sum(debtors, l => l.b))}</div></div><div class="nsum-n"><b>${debtors.length}</b><small>borclu</small></div></div>
+    ${big ? `<div class="nsum-big"><small>Ən böyük borc</small><span><b>${esc(big.name)}</b> ${money(big.b)}</span></div>` : '<p class="hint" style="margin:8px 0 0">Hamının borcu ödənilib 🎉</p>'}</div>
+    <input id="nq" type="search" placeholder="Ad və ya telefon axtar" value="${esc(S.nq)}" data-inp="nq" style="margin-top:12px" autocomplete="off">
+    <div class="seg" style="margin-top:10px">${[['debt','Ən çox borc'],['old','Ən köhnə'],['name','Ad (A–Z)']].map(([k, t]) => `<button class="${S.nSort === k ? 'on' : ''}" data-act="nSort" data-k="${k}">${t}</button>`).join('')}</div>`;
+  const srt = A => S.nSort === 'name' ? A.slice().sort((x, y) => x.name.localeCompare(y.name, 'az')) : S.nSort === 'old' ? A.slice().sort((x, y) => (x.last || Infinity) - (y.last || Infinity)) : A;
+  const D = srt(F.filter(l => l.b > 0)), Z = srt(F.filter(l => l.b <= 0));
+  if (D.length) h += `<div class="zhd"><b>Borcu olanlar</b><small>${D.length} nəfər, ${money(sum(D, l => l.b))}</small></div><div>${D.map(nrow).join('')}</div>`;
+  if (Z.length) h += `<div class="zhd"><b>Borcu olmayanlar</b><small>${Z.length} nəfər</small></div><div>${Z.map(nrow).join('')}</div>`;
+  if (!F.length) h += '<p class="muted" style="margin-top:14px">Tapılmadı.</p>';
+  return h; }
 function vSup(){
   const L = ledList('t'), owed = L.filter(l => l.b > 0);
   let h = `<div class="card" style="margin-top:14px"><small>Tədarükçülərə borcumuz</small><div class="bigbal ${owed.length ? 'debt' : ''}" style="margin-bottom:0">${money(sum(owed, l => l.b))}</div></div>`;
@@ -958,11 +1046,14 @@ function vSup(){
 function vLed(){
   const l = S.ledgers.find(x => x.id === S.ledOpen); if (!l) { S.view = S.ledKind === 't' ? 'sup' : 'nisye'; return S.ledKind === 't' ? vSup() : vNisye(); }
   const m = l.kind === 'm', b = bal(l), E = ent(l.e).sort((x, y) => y.at - x.at);
-  let h = `<div class="card" style="margin-top:14px">${l.phone ? `<a href="tel:${esc(l.phone)}" class="muted">${esc(l.phone)}</a>` : ''}
-    <div><small>${m ? 'Borcu' : 'Bizim borcumuz'}</small></div><div class="bigbal ${b > 0 ? 'debt' : ''}">${money(b)}</div>
-    <div class="row"><button class="btn pri" data-act="ledPay">${m ? 'Ödəniş al' : 'Ödəniş et'}</button>${isAdmin() ? `<button class="btn" data-act="ledDebt">+ Borc yaz</button>${b !== 0 ? `<button class="btn warn" data-act="ledClear">${b > 0 ? 'Borcu sil' : 'Sıfırla'}</button>` : ''}` : ''}</div></div>`;
+  const tb = sum(E.filter(e => e.type === 'borc' && !e.adj), e => e.amount), tp = sum(E.filter(e => e.type !== 'borc'), e => e.amount), lastB = lastDebtAt(l);
+  let h = `<div class="card" style="margin-top:14px"><div class="row" style="flex-wrap:nowrap;gap:12px"><span class="avt big ${b <= 0 ? 'ok' : ''}">${esc(initialOf(l.name))}</span><div class="grow" style="min-width:0"><b style="font-size:19px">${esc(l.name)}</b>${l.phone ? `<div><a href="tel:${esc(l.phone)}" class="muted">📞 ${esc(l.phone)}</a></div>` : ''}</div></div>
+    <div style="margin-top:12px"><small>${m ? 'Borcu' : 'Bizim borcumuz'}</small></div><div class="bigbal ${b > 0 ? 'debt' : ''}" style="margin-bottom:4px">${money(b)}</div>
+    <small>${m ? 'Cəmi nisyə' : 'Cəmi alınıb'} ${money(tb)} · ${m ? 'ödənilib' : 'ödəmişik'} ${money(tp)}${lastB && b > 0 ? ' · son ' + (m ? 'nisyə' : 'alış') + ': ' + agoTxt(lastB) : ''}</small>
+    <button class="btn pri" style="width:100%;margin-top:14px" data-act="ledPay">${m ? 'Ödəniş al' : 'Ödəniş et'}</button>
+    ${isAdmin() ? `<div class="row" style="margin-top:8px;flex-wrap:nowrap"><button class="btn" style="flex:1" data-act="ledDebt">+ Borc yaz</button>${b !== 0 ? `<button class="btn warn" style="flex:1" data-act="ledClear">${b > 0 ? 'Borcu sil' : 'Sıfırla'}</button>` : ''}</div>` : ''}</div>`;
   h += '<div class="sec">Əməliyyatlar</div><div class="card" style="padding:4px 16px">';
-  h += E.length ? E.map(e => `<div class="li"><div class="grow"><div>${e.adj ? (e.type === 'borc' ? 'Düzəliş (borc artırıldı)' : 'Borc silindi') : e.manual && e.type === 'borc' ? 'Borc yazıldı (əl ilə)' : e.type === 'borc' ? (m ? 'Nisyə' : 'Mal alındı') : (m ? 'Ödədi' : 'Ödədik')}${e.pay ? `<span class="tag">${esc(e.pay)}</span>` : ''}${e.noDate ? '<span class="tag">tarixsiz</span>' : ''}</div>
+  h += E.length ? E.map(e => `<div class="li"><span class="eic ${e.type === 'borc' ? 'b' : 'p'}">${e.type === 'borc' ? '↑' : '↓'}</span><div class="grow"><div>${e.adj ? (e.type === 'borc' ? 'Düzəliş (borc artırıldı)' : 'Borc silindi') : e.manual && e.type === 'borc' ? 'Borc yazıldı (əl ilə)' : e.type === 'borc' ? (m ? 'Nisyə' : 'Mal alındı') : (m ? 'Ödədi' : 'Ödədik')}${e.pay ? `<span class="tag">${esc(e.pay)}</span>` : ''}${e.noDate ? '<span class="tag">tarixsiz</span>' : ''}</div>
       <small>${[e.noDate ? '' : (e.day ? dayLabel(e.day) : dayLabel(dayStr(new Date(e.at)))) + (e.manual ? '' : ', ' + hm(e.at)), e.note ? esc(e.note) : '', e.by ? esc(e.by) : ''].filter(Boolean).join(', ')}</small></div>
       <div class="amt ${e.type === 'borc' ? 'debt' : 'up'}">${e.type === 'borc' ? '+' : '−'}${money(e.amount)}</div>${isAdmin() ? `<button class="x" data-act="ledDel" data-id="${e.id}" aria-label="Sil">×</button>` : ''}</div>`).join('')
     : '<p class="muted">Hələ əməliyyat yoxdur.</p>';
@@ -980,7 +1071,7 @@ function autoSumRow(r){ if (!r.auto) return; const lp = lastPrice(r.ref); r.sum 
 function bAdd(ref){ if (bFind(ref)) return; const r = { ref, qty: '1', sum: '', auto: true }; autoSumRow(r); bSels().push(r); }
 function bTotalTxt(){ const L = bSels(); return L.length + ' mal, cəmi ' + money(sum(L, r => num(r.sum))); }
 function vBuys(){
-  return `<div class="seg" style="margin-top:14px">${[['buy','Bazarlıq'],['exp','Xərclər']].map(([k, l]) => `<button class="${S.bTab === k ? 'on' : ''}" data-act="bTab" data-k="${k}">${l}</button>`).join('')}</div>` +
+  return `<div class="seg" style="margin-top:14px">${[['exp','Xərclər'],['buy','Bazarlıq']].map(([k, l]) => `<button class="${S.bTab === k ? 'on' : ''}" data-act="bTab" data-k="${k}">${l}</button>`).join('')}</div>` +
     (S.bTab === 'exp' ? vExp() : vBazar()); }
 function vBazar(){
   const items = allStock(), shopRefs = new Set(S.shop.map(x => x.ref).filter(Boolean)), sups = ledList('t');
@@ -1043,9 +1134,11 @@ function buyList(fn, empty){ S.buyFn = fn;
 
 /* ---------- more ---------- */
 function vMore(){
-  return '<div class="tiles">' + [['shiftAsk','Növbəni bağla','Hesabatı WhatsApp-a göndər'],['sales','Satış cədvəli','Gün-gün satış, qrafik, ümumi hesabat'],['shifts','Növbələr','Bağlanan və bağlanmayan bütün növbələr'],['eodToday','Gün sonu','Bugünkü hesabat, təqvim günü üzrə'],['products','Menyu və setlər','Qiymətlər, çay setləri, reseptlər'],['stock','Anbar','Mallar, sayım, minimum'],['staff','İşçilər','Davamiyyət, verilən pullar, kodlar'],
-    ['sup','Tədarükçülər','Kimdən alırıq, borcumuz'],['log','Ləğv jurnalı','Silinən və azaldılan sifarişlər'],['settings','Parametrlər','Ad, aylıq hədəf, görünüş'],['help','Təlimat','Proqramdan necə istifadə etməli']]
-    .map(([k, l, d]) => `<button data-act="${['settings','eodToday','shiftAsk'].includes(k) ? k : 'go'}" data-v="${k}">${IC[k]}<b>${l}</b><small>${d}</small></button>`).join('') + '</div>'; }
+  const ALL = { shiftAsk: ['Növbəni bağla','Hesabatı WhatsApp-a göndər'], sales: ['Satış cədvəli','Gün-gün satış, qrafik, ümumi hesabat'], shifts: ['Növbələr','Bağlanan və bağlanmayan bütün növbələr'], eodToday: ['Gün sonu','Bugünkü hesabat, təqvim günü üzrə'],
+    products: ['Menyu və setlər','Qiymətlər, çay setləri, reseptlər'], stock: ['Anbar','Mallar, sayım, minimum'], staff: ['İşçilər','Davamiyyət, verilən pullar, kodlar'], sup: ['Tədarükçülər','Kimdən alırıq, borcumuz'],
+    log: ['Ləğv jurnalı','Silinən və azaldılan sifarişlər'], settings: ['Parametrlər','Ad, aylıq hədəf, görünüş'], help: ['Təlimat','Proqramdan necə istifadə etməli'] };
+  const G = [['💰 Hesabat və kassa', ['shiftAsk','eodToday','sales','shifts']], ['🍵 Menyu və anbar', ['products','stock','sup']], ['👥 İşçilər', ['staff']], ['⚙️ Sistem', ['log','settings','help']]];
+  return G.map(([t, ks]) => `<h3 class="mgh">${t}</h3><div class="tiles">` + ks.map(k => `<button data-act="${['settings','eodToday','shiftAsk'].includes(k) ? k : 'go'}" data-v="${k}">${IC[k]}<b>${ALL[k][0]}</b><small>${ALL[k][1]}</small></button>`).join('') + '</div>').join(''); }
 
 /* ---------- menu ---------- */
 function vProducts(){
@@ -1142,9 +1235,9 @@ function vStaff(){
   const M = S.stMonth; if (M) { const [y, m] = d.split('-').map(Number);
     const rows = S.staff.filter(u => u.role !== 'admin' && (!u.left || M.days.some(x => x.att && x.att[u.id] && x.att[u.id].in) || M.pays.some(p => p.staff === u.id))).sort((a, b) => (a.left ? 1 : 0) - (b.left ? 1 : 0)).map(u => { const A = M.days.map(x => x.att && x.att[u.id]).filter(a => a && a.in), hw = u.halfWage > 0, halfN = hw ? A.filter(a => a.half).length : 0, fullN = A.length - halfN, days = A.length;
       const paid = sum(M.pays.filter(p => p.staff === u.id), p => p.amount), earned = (u.wage || 0) * fullN + (u.halfWage || 0) * halfN;
-      return `<tr><td>${esc(u.name)}${u.left ? ' <small class="muted">(köhnə)</small>' : ''}</td><td class="r">${hw && halfN ? fullN + ' + ' + halfN + 'y' : days}</td><td class="r">${u.wage ? money(earned) : '—'}</td><td class="r">${money(paid)}</td><td class="r ${u.wage && earned - paid > 0 ? 'debt' : ''}">${u.wage ? money(earned - paid) : '—'}</td></tr>`; }).join('');
+      return `<tr data-act="staffDays" data-id="${u.id}"><td>${esc(u.name)}${u.left ? ' <small class="muted">(köhnə)</small>' : ''} <span class="muted">›</span></td><td class="r">${hw && halfN ? fullN + ' + ' + halfN + 'y' : days}</td><td class="r">${u.wage ? money(earned) : '—'}</td><td class="r">${money(paid)}</td><td class="r ${u.wage && earned - paid > 0 ? 'debt' : ''}">${u.wage ? money(earned - paid) : '—'}</td></tr>`; }).join('');
     h += `<div class="sec">${MONTHS[m - 1]} ayı üzrə</div><div class="card scroll"><table><thead><tr><th>İşçi</th><th class="r">Gün</th><th class="r">Hesablanan</th><th class="r">Verilib</th><th class="r">Qalıq</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="hint">Hesablanan = tam gün sayı × tam gün maaşı + yarım smen sayı × yarım smen maaşı. "10 + 3y" — 10 tam gün, 3 yarım smen. Maaşları işçinin ✎ düyməsindən yazın.</p></div>`; }
+      <p class="hint">Hesablanan = tam gün sayı × tam gün maaşı + yarım smen sayı × yarım smen maaşı. "10 + 3y" — 10 tam gün, 3 yarım smen. Maaşları işçinin ✎ düyməsindən yazın. <b>İşçinin sətrinə basanda</b> gün-gün davamiyyəti açılır.</p></div>`; }
   h += `<details class="card oldst" id="oldst" style="margin-top:14px" ${S.oldOpen ? 'open' : ''}><summary data-act="oldTog"><b>🗂 Köhnə işçilər</b> <span class="tag">${gone.length}</span></summary>
     ${gone.length ? '' : '<p class="muted" style="margin:8px 0 0">Hələ köhnə işçi yoxdur. İşçinin ✎ düyməsində "İşdən çıxdı" basanda bura düşəcək.</p>'}
     ${gone.slice().sort((a, b) => (b.leftAt || 0) - (a.leftAt || 0)).map(u => `<div class="li"><div class="grow"><div>${esc(u.name)}</div><small>${u.leftAt ? 'çıxıb ' + dayLabel(dayStr(new Date(u.leftAt))) : 'köhnə işçi'}${u.wage ? ', gündəlik ' + money(u.wage) : ''}</small></div>
@@ -1179,8 +1272,18 @@ async function loadCmp(){ const now = bizDate(), y = now.getFullYear(), m = now.
   const nisP = c => c.pay === 'nisyə' ? (c.nisAmt !== undefined && c.nisAmt !== null ? c.nisAmt : c.total) : 0;
   const got = f => sum(R.checks.filter(c => f(c.day)), c => (+c.total || 0) + (+c.tip || 0) - nisP(c)) + sum(R.incAll.filter(x => f(x.day)), x => x.amount);
   S.cmp = { cur: got(d => d >= cs), prevSame: got(d => d < cs && d <= dayStr(pse)), prevFull: got(d => d < cs), dayN, dim: new Date(y, m + 1, 0).getDate(), m }; render(); }
-async function loadRep(){ S.rep = null; render(); const r = period(S.repP);
-  const [d, b] = await Promise.all([loadDays(r.from, r.to), Store.range('buys', 'day', r.from, r.to)]); S.rep = { ...d, buys: b, r }; render(); }
+const dayIdx = ds => { const [y, m, d] = ds.split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / 86400000); };
+function prevPeriod(P, r){ const len = dayIdx(r.to) - dayIdx(r.from) + 1;
+  if (P.k === 'month') { const [y, m] = r.from.split('-').map(Number), pf = dayStr(new Date(y, m - 2, 1)), pe = dayStr(new Date(y, m - 1, 0)), pt = shiftDay(pf, len - 1); return { from: pf, to: pt > pe ? pe : pt }; }
+  return { from: shiftDay(r.from, -len), to: shiftDay(r.from, -1) }; }
+async function loadRep(){ S.rep = null; render(); const r = period(S.repP), pr = prevPeriod(S.repP, r);
+  const [d, b, pd, pb] = await Promise.all([loadDays(r.from, r.to), Store.range('buys', 'day', r.from, r.to), loadDays(pr.from, pr.to), Store.range('buys', 'day', pr.from, pr.to)]);
+  let pc = null; try { pc = repCalc({ ...pd, buys: pb }); } catch(e){}
+  S.rep = { ...d, buys: b, r, pr, pc }; render(); }
+const cmpTag = (cur, prev, upGood) => { const pc = S.rep && S.rep.pc; if (!pc) return ''; cur = +cur || 0; prev = +prev || 0; if (!cur && !prev) return '';
+  if (!prev) return '<span class="cmp flat">↑ əvvəl yox idi</span>';
+  const pct = (cur - prev) / Math.abs(prev) * 100; if (Math.abs(pct) < 0.5) return '<span class="cmp flat">→ 0%</span>';
+  return `<span class="cmp ${(cur > prev) === upGood ? 'good' : 'bad'}">${cur > prev ? '↑' : '↓'} ${Math.abs(pct).toFixed(0)}%</span>`; };
 function repCalc(RP = S.rep){ const { checks: s, buys: b, pays, inc, logs } = RP;
   const o = { n: s.length, tot: sum(s, x => x.total), disc: sum(s, x => x.discount), cash: sum(s, x => x.pay === 'nağd' ? x.total : x.pay === 'qarışıq' || x.pay === 'nisyə' ? x.cash || 0 : 0), card: sum(s, x => x.pay === 'kart' ? x.total : x.pay === 'qarışıq' || x.pay === 'nisyə' ? x.card || 0 : 0),
     nis: sum(s.filter(x => x.pay === 'nisyə'), x => x.nisAmt !== undefined && x.nisAmt !== null ? x.nisAmt : x.total), incCash: sum(inc.filter(x => x.pay === 'nağd'), x => x.amount), incCard: sum(inc.filter(x => x.pay === 'kart'), x => x.amount),
@@ -1213,11 +1316,12 @@ function vRep(){
   if (!S.rep) return h + '<div class="loading">Hesablanır…</div>';
   const o = repCalc(), s = S.rep.checks, r = S.rep.r;
   const st = (k, v, cls = '') => `<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
-  h += `<div class="stats" style="margin-top:14px">${st('Qalıq (satış + bəxşiş − bazarlıq − xərc − işçi)', money(o.net), 'big' + (o.net < 0 ? ' neg' : ''))}
+  const pc = S.rep.pc || {};
+  h += (S.rep.pr ? `<p class="hint" style="margin:10px 0 0">Müqayisə: <b>${perLabel(S.rep.pr)}</b> ilə (↑ ↓ ilə faiz)</p>` : '') + `<div class="stats" style="margin-top:14px">${st('Qalıq (satış + bəxşiş − bazarlıq − xərc − işçi)', money(o.net) + cmpTag(o.net, pc.net, true), 'big' + (o.net < 0 ? ' neg' : ''))}
     ${kassaCard(o)}
-    <div class="stat3">${st('Satış', money(o.tot))}${st('Çek sayı', o.n)}${st('Satış + bəxşiş', money(o.tot + (o.tip || 0)))}</div>
-    ${o.tip ? st('Bəxşiş (artıq ödəniş)', money(o.tip)) : ''}
-    ${st('Bazarlıq', money(o.bz))}${st('Xərclər', money(o.ex))}${st('İşçilərə verilən', money(o.sp))}
+    <div class="stat3">${st('Satış', money(o.tot) + cmpTag(o.tot, pc.tot, true), 'inc')}${st('Çek sayı', o.n + cmpTag(o.n, pc.n, true))}${st('Satış + bəxşiş', money(o.tot + (o.tip || 0)) + cmpTag(o.tot + (o.tip || 0), (pc.tot || 0) + (pc.tip || 0), true), 'inc')}</div>
+    ${o.tip ? st('Bəxşiş (artıq ödəniş)', money(o.tip) + cmpTag(o.tip, pc.tip, true), 'inc') : ''}
+    ${st('Bazarlıq', money(o.bz) + cmpTag(o.bz, pc.bz, false), 'exp')}${st('Xərclər', money(o.ex) + cmpTag(o.ex, pc.ex, false), 'exp')}${st('İşçilərə verilən', money(o.sp) + cmpTag(o.sp, pc.sp, false), 'exp')}
     ${o.ownT ? st('Bizim masa (satış deyil)', money(o.ownT) + (o.ownC ? '<small style="display:block;font-size:14px;font-weight:400">maya ~' + money(o.ownC) + '</small>' : '')) : ''}
     ${o.disc ? st('Endirimlər', money(o.disc)) : ''}${o.lg.length ? st('Ləğvlər', o.lg.length + ' dəfə, ' + money(sum(o.lg, x => x.amount))) : ''}</div>
     <div class="row" style="margin-top:12px"><button class="btn pri" data-act="eod">Gün sonu mətni</button>${canSave() && s.length ? '<button class="btn" data-act="csv">Excel üçün yüklə (CSV)</button>' : ''}${o.lg.length ? '<button class="btn" data-act="go" data-v="log">Ləğv jurnalı</button>' : ''}</div>`;
@@ -1300,7 +1404,7 @@ const HELP = [
   <li>Ödəniş seçin: <b>Nağd</b>, <b>Kart</b>, <b>Nağd + kart</b> (nağd hissəni yazırsınız, qalanı karta düşür) və ya <b>Nisyə</b>.</li></ol>
   <p><b>Müştəri fərqli məbləğ ödəyəndə</b> ("Müştəri ödədi" xanası və ya hazır 11 ₼ / 15 ₼ düymələri):</p>
   <ul><li>Artıq ödəyibsə → <b>Bəxşiş</b> kimi yazılır.</li>
-  <li>Kartla artıq vurub fərqi nağd götürübsə → <b>"Nağd qaytarıldı"</b> seçin və <b>Kart</b> basın.</li>
+  
   <li>Az ödəyibsə → fərq endirim kimi yazılır.</li></ul>
   <p><b>Keçmiş günə yazmaq:</b> "📅 Başqa günə yaz" → Dünən, Sırağagün və ya tarix. Belə çeklər "sonradan yazılıb" kimi görünür.</p>`],
  ['📒 Nisyə (borc dəftəri)', `<ol><li>Hesab bağlayanda <b>Nisyə</b> basın.</li>
@@ -1597,9 +1701,9 @@ function updCard(){ const c = $('#pCard'); if (!c) return; const { total } = pay
   c.textContent = cash > total ? 'nağd məbləğdən çoxdur' : money(total - cash); }
 function paidInfo(total){ const pv = PAY.paid === '' ? null : r2(num(PAY.paid)); if (pv === null || pv === total) return '';
   if (pv < total) return 'Əskik ' + money(total - pv) + ' endirim kimi yazılacaq.';
-  return PAY.xmode === 'cb' ? 'Kartdan ' + money(pv) + ' çəkilir, ' + money(pv - total) + ' kassadan nağd qaytarılır. Yalnız "Kart" düyməsi ilə işləyir.' : 'Artıq ' + money(pv - total) + ' bəxşiş kimi yazılacaq.'; }
+  return 'Artıq ' + money(pv - total) + ' bəxşiş kimi yazılacaq.'; }
 function updPaid(){ const total = payCalc(S.tabs[S.open]).total, i = $('#pPaidInfo'), x = $('#pXtra'), pv = PAY.paid === '' ? null : r2(num(PAY.paid));
-  if (i) i.textContent = paidInfo(total); if (x) x.style.display = pv !== null && pv > total ? '' : 'none'; }
+  if (i) i.textContent = paidInfo(total); }
 function payModal(){ const tab = S.tabs[S.open]; const { sub: sb, disc, total } = payCalc(tab);
   const rnd = [...new Set([Math.ceil(total), Math.ceil(total / 5) * 5, Math.ceil(total / 10) * 10])].filter(v => v > total).slice(0, 3);
   modal(`<h2>${esc((S.tabs[S.open] && S.tabs[S.open].label) || tableById(S.open).name)}: hesab</h2>
@@ -1610,11 +1714,11 @@ function payModal(){ const tab = S.tabs[S.open]; const { sub: sb, disc, total } 
       return `<label>Hansı günə yazılsın</label><div class="chips" style="flex-wrap:wrap">${q.map(([d, l]) => `<button class="chip ${(d === '0' ? !PAY.day || PAY.day === dayStr() : PAY.day === shiftDay(dayStr(), +d)) ? 'on' : ''}" data-act="payDay" data-d="${d}">${l}</button>`).join('')}
         <input type="date" data-chg="payDate" value="${dd}" max="${dayStr()}" style="width:auto;min-height:42px" aria-label="Tarix seç"></div>
         ${PAY.day && PAY.day !== dayStr() ? `<p class="note" style="margin-top:8px">Bu hesab <b>${dayLabel(PAY.day)}</b> gününə yazılacaq.</p>` : ''}`; })()}
+    <div class="chips wrap" style="margin-top:8px">${[['%','5'],['%','10'],['%','20'],['₼','1'],['₼','2'],['₼','5']].map(([m, v]) => `<button class="chip ${PAY.mode === m && PAY.v === v ? 'on' : ''}" data-act="discQuick" data-m="${m}" data-v="${v}">${v} ${m}</button>`).join('')}${PAY.v ? '<button class="chip" data-act="discQuick" data-m="₼" data-v="">Sil</button>' : ''}</div>
     <div style="margin-top:16px"><small id="pSubL">${disc ? 'Məbləğ ' + money(sb) + ', endirim ' + money(disc) : 'Ödəniləcək'}</small><div class="bigsum" id="pTot">${money(total)}</div></div>
     ${PAY.split ? '' : `<label for="pPaid">Müştəri ödədi (fərqlidirsə)</label>
       <div class="chips" style="flex-wrap:wrap">${rnd.map(v => `<button class="chip" data-act="paidQuick" data-v="${v}">${v} ₼</button>`).join('')}</div>
       <input id="pPaid" inputmode="decimal" value="${esc(PAY.paid)}" data-inp="ppaid" placeholder="Boş qalsa: ${money(total)}" style="margin-top:8px">
-      <div class="seg" id="pXtra" style="margin-top:8px;${PAY.paid !== '' && r2(num(PAY.paid)) > total ? '' : 'display:none'}">${[['tip','Bəxşiş'],['cb','Nağd qaytarıldı']].map(([k, l]) => `<button class="${(PAY.xmode || 'tip') === k ? 'on' : ''}" data-act="payXtra" data-m="${k}">${l}</button>`).join('')}</div>
       <p id="pPaidInfo" class="hint">${paidInfo(total)}</p>`}
     ${PAY.split ? `<div class="card" style="margin-top:12px;background:var(--bg)"><b>Qarışıq ödəniş</b>
       <label for="pCash">Nağd verilən hissə ₼</label><input id="pCash" inputmode="decimal" value="${esc(PAY.cash)}" data-inp="pcash">
@@ -1751,8 +1855,12 @@ const ACT = {
     if ($('#ciMenu') && $('#ciMenu').checked) { const ex = S.products.find(x => x.name.toLowerCase() === name.toLowerCase());
       if (ex) pid = ex.id; else { pid = uid(); S.products.push({ id: pid, kind: 'item', name, cat: mv('ciCat') || 'Digər', price, cost: 0, track: false, stock: 0, min: 0, parts: [], recipe: [] }); saveProducts(); } }
     tabEvent(S.open, [{ pid, name, price, d: qty }]); S.q = ''; closeModal(); render(); toast(name + (qty > 1 ? ' × ' + qty : '') + ' sifarişə əlavə edildi'); },
-  addItem: el => { const p = prodById(el.dataset.id); if (!p) return; tabEvent(S.open, [{ pid: p.id, name: p.name, price: r2(p.price), d: 1 }]); },
-  subItem: el => { const tab = S.tabs[S.open]; const i = tab ? tab.items.findIndex(l => l.pid === el.dataset.id) : -1; if (i < 0) return; ACT.qty({ dataset: { i: String(i), d: '-1' } }); },
+  addItem: el => { const p = prodById(el.dataset.id); if (!p) return; buzz(12); tabEvent(S.open, [{ pid: p.id, name: p.name, price: r2(p.price), d: 1 }]); },
+  tqOpen: el => { closeModal(); ACT.openT(el); },
+  tqPay: el => { closeModal(); S.open = el.dataset.id; ACT.closeTab(); },
+  addN: el => { const p = prodById(el.dataset.id), n = +el.dataset.n; closeModal(); if (!p || !n) return; buzz(20); tabEvent(S.open, [{ pid: p.id, name: p.name, price: r2(p.price), d: n }]); },
+  undo: () => { const f = undoToast.fn; clearTimeout(undoToast.t); undoToast.fn = null; const t = $('#toast'); t.innerHTML = ''; t.classList.remove('has-undo'); f && f(); },
+  subItem: el => { buzz(8); const tab = S.tabs[S.open]; const i = tab ? tab.items.findIndex(l => l.pid === el.dataset.id) : -1; if (i < 0) return; ACT.qty({ dataset: { i: String(i), d: '-1' } }); },
   qty: el => { const tab = S.tabs[S.open], l = tab && tab.items[+el.dataset.i], d = +el.dataset.d; if (!l) return;
     if (d < 0) { log(Date.now() - (l.at || 0) < 30000 ? 'tez' : 'azaltma', l.name + ' × 1', l.price, tableById(S.open)?.name);
       if (tab.items.length === 1 && l.qty === 1 && !tab.note && !tab.label) return Store.del('tabs/' + S.open); }
@@ -1772,9 +1880,11 @@ const ACT = {
       ${tab?.items?.length ? '<button class="btn warn" style="width:100%;margin-top:12px" data-act="clearTab">Masanı ödənişsiz boşalt</button><p class="muted" style="font-size:14px">Səhv açılmış sifariş üçündür. Satış kimi yazılmır, ləğv jurnalına düşür.</p>' : ''}`); },
   saveNote: () => { const note = mv('tNote'), tab = S.tabs[S.open]; if (!tab && !note) return closeModal();
     if (!note && tab && !tab.items.length && !tab.label) Store.del('tabs/' + S.open); else Store.merge('tabs/' + S.open, { tableId: S.open, note, ...(tab ? {} : { openedAt: Date.now(), by: S.me.name }) }); closeModal(); },
-  clearTab: () => confirmBox('Sifariş silinsin? Bu, ləğv jurnalına yazılacaq.', 'Boşalt', () => { const tab = S.tabs[S.open], t = tableById(S.open);
-    log('bosalt', tab.items.map(l => l.name + ' × ' + l.qty).join(', '), tabTotal(tab), t?.name);
-    delete S.tabs[S.open]; Store.del('tabs/' + S.open); S.view = 'tables'; S.open = null; render(); toast('Masa boşaldıldı'); }),
+  clearTab: () => { closeModal(); const id = S.open, tab = S.tabs[id], t = tableById(id); if (!tab) return;
+    const snap = { items: tab.items.map(l => ({ ...l })), openedAt: tab.openedAt, by: tab.by, note: tab.note, label: tab.label }, txt = tab.items.map(l => l.name + ' × ' + l.qty).join(', '), tot = tabTotal(tab), tn = t?.name;
+    delete S.tabs[id]; Store.del('tabs/' + id); S.view = 'tables'; S.open = null; render(); buzz(30);
+    undoToast('Masa boşaldıldı', () => { tabEvent(id, snap.items.map(l => ({ pid: l.pid, name: l.name, price: l.price, d: l.qty, at: l.at })), { openedAt: snap.openedAt, by: snap.by, ...(snap.note ? { note: snap.note } : {}), ...(snap.label ? { label: snap.label } : {}) }); toast('Sifariş geri qaytarıldı'); },
+      () => log('bosalt', txt, tot, tn)); },
   moveTab: () => { const tab = S.tabs[S.open]; if (!tab?.items?.length) return toast('Köçürüləcək sifariş yoxdur'); if (S.open === 'own') return toast('Bizim masadan köçürmək olmur');
     modal(`<h2>Hansı masaya köçürülsün?</h2><p class="muted">Dolu masaya köçürsəniz, sifarişlər birləşəcək.</p><div class="pick">` +
       S.tables.filter(t => t.id !== S.open).map(t => `<button class="${S.tabs[t.id]?.items?.length ? 'busy' : ''}" data-act="doMove" data-id="${t.id}">${esc(t.name)}</button>`).join('') +
@@ -1794,6 +1904,7 @@ const ACT = {
   paidQuick: el => { PAY.paid = el.dataset.v; const i = $('#pPaid'); if (i) i.value = PAY.paid; updPaid(); },
   splitOff: () => { PAY.split = false; payModal(); },
   cashQuick: el => { PAY.cash = el.dataset.v; const i = $('#pCash'); if (i) i.value = PAY.cash; updCard(); },
+  discQuick: el => { PAY.mode = el.dataset.m; PAY.v = el.dataset.v; if (PAY.split) PAY.cash = mv('pCash'); if ($('#pPaid')) PAY.paid = mv('pPaid'); payModal(); },
   discMode: el => { PAY.v = mv('pDisc'); if (PAY.split) PAY.cash = mv('pCash'); if ($('#pPaid')) PAY.paid = mv('pPaid'); PAY.mode = el.dataset.m; payModal(); },
   pay: el => { if (el.dataset.p === 'nisyə') return custModal(); finishPay(el.dataset.p, null, el); },
   npPay: el => { PAY.nisPay = el.dataset.m; document.querySelectorAll('#npSeg button').forEach(b => b.classList.toggle('on', b === el)); const i = $('#npInfo'); if (i) i.textContent = nisInfo(); },
@@ -1859,6 +1970,7 @@ const ACT = {
       if (e.type === 'odenis' && (e.day || e.incDay) && l.kind === 'm') dayMerge(e.day || e.incDay, { inc: { [el.dataset.id]: null } });
       log('diger', (l.kind === 'm' ? 'Nisyə: ' : 'Tədarükçü: ') + l.name + (e.type === 'borc' ? ' borc qeydi' : ' ödəniş qeydi'), e.amount); }); },
 
+  nSort: el => { S.nSort = el.dataset.k; render(); },
   bTab: el => { S.bTab = el.dataset.k; render(); },
   bSel: el => { const ref = el.dataset.ref; if (bFind(ref)) S.bSels = bSels().filter(x => x.ref !== ref); else bAdd(ref); render(); },
   bDel: el => { S.bSels = bSels().filter(x => x.ref !== el.dataset.ref); render(); },
@@ -2018,7 +2130,18 @@ const ACT = {
 
   logKind: el => { S.logKind = el.dataset.k; render(); },
   per: el => { const key = el.dataset.key, P = S[key + 'P'], r = period(P); P.k = el.dataset.k;
-    if (P.k === 'custom') { P.from = P.from || r.from; P.to = P.to || r.to; } reloadKey(key); },
+    if (P.k === 'custom') { P.mode = 'one'; P.from = P.to = r.to; } reloadKey(key); },
+  perMode: el => { const key = el.dataset.key, P = S[key + 'P'], r = period(P); P.mode = el.dataset.m; if (P.mode === 'one') { P.from = P.to = r.from; reloadKey(key); } else render(); },
+  staffDays: el => { const u = S.staff.find(x => x.id === el.dataset.id), M = S.stMonth; if (!u || !M) return; const [y, m] = S.stDay.split('-').map(Number), last = new Date(y, m, 0).getDate(), td = dayStr(), hw = u.halfWage > 0;
+    let full = 0, half = 0; const rows = []; for (let d = 1; d <= last; d++) { const ds = y + '-' + pad(m) + '-' + pad(d); if (ds > td) break;
+      const doc = (ds === td && S.dayDoc) ? S.dayDoc : M.days.find(x => x.day === ds), a = doc && doc.att && doc.att[u.id], pd = M.pays.filter(p => p.staff === u.id && p.day === ds), pm = sum(pd, p => p.amount), came = a && a.in, isH = came && hw && a.half;
+      if (came) { if (isH) half++; else full++; }
+      rows.push(`<div class="dayrow ${came ? '' : 'off'}"><span>${dayLabel(ds)}</span><span><span class="st ${came ? 'y' : ''}">${came ? (hw ? (isH ? 'Yarım smen' : 'Tam gün') : 'Gəldi ✓') : 'Gəlməyib'}</span>${pm ? ` <small>· verilib ${money(pm)}</small>` : ''}</span></div>`); }
+    const earned = (u.wage || 0) * full + (u.halfWage || 0) * half, paid = sum(M.pays.filter(p => p.staff === u.id), p => p.amount);
+    modal(`<h2>${esc(u.name)}</h2><small>${MONTHS[m - 1]} ayı, gün-gün davamiyyət</small>
+      <div class="two" style="margin-top:10px"><div class="stat"><div class="k">İşlədiyi gün</div><div class="v">${full}${half ? ' + ' + half + 'y' : ''}</div></div><div class="stat"><div class="k">Verilib</div><div class="v">${money(paid)}</div></div></div>
+      ${u.wage ? `<p class="hint">Hesablanan ${money(earned)}, qalıq ${money(earned - paid)}</p>` : ''}
+      <div style="margin-top:8px">${rows.reverse().join('')}</div><div class="acts"><button class="btn" data-act="mClose">Bağla</button></div>`); },
   loadRep: () => { loadRep(); loadCmp(); },
   chk: el => { S.openChk = S.openChk === el.dataset.id ? null : el.dataset.id; render(); },
   renameSale: el => { const x = S.rep.checks.find(c => c.id === el.dataset.id); if (!x) return;
@@ -2199,7 +2322,7 @@ async function finishPay(kind, cust, btn){
   const back = d !== dayStr(), enteredAt = Date.now(), now = back ? enteredAt - Math.round((new Date(dayStr()) - new Date(d)) / 86400000) * 86400000 : enteredAt;
   let tip = 0; const pv = PAY.paid === '' || PAY.split || kind === 'nisyə' ? null : r2(num(PAY.paid));
   let cardExtra = 0;
-  if (pv !== null && pv > 0 && pv !== total) { if (pv > total) { if (PAY.xmode === 'cb') { if (kind !== 'kart') return toast('"Nağd qaytarıldı" yalnız Kart ilə ödəyəndə olur. Kart düyməsinə basın.'); cardExtra = r2(pv - total); } else tip = r2(pv - total); } else { disc = r2(disc + total - pv); total = pv; } }
+  if (pv !== null && pv > 0 && pv !== total) { if (pv > total) tip = r2(pv - total); else { disc = r2(disc + total - pv); total = pv; } }
   const sale = { table: t.name, tableId: t.id, zone: t.zone || '', items: tab.items.map(l => ({ pid: l.pid, name: l.name, price: l.price, qty: l.qty })), subtotal: sb, discount: disc, total, tip, ...(cardExtra ? { cardExtra } : {}), label: tab.label || '', pay: kind, ...(back ? { backdated: true, enteredAt } : {}),
     openedAt: tab.openedAt || now, closedAt: now, note: tab.note || '', by: S.me.name, openedBy: tab.by || '', cust: cust ? cust.id : '', custName: cust ? cust.name : '' };
   let nisAmt = total;
@@ -2224,6 +2347,24 @@ function reloadKey(k){ if (k === 'sales') loadSales(); else if (k === 'shift') l
 async function loadBuys(){ S.buys = null; render(); const r = period(S.buyP); S.buys = await Store.range('buys', 'day', r.from, r.to); render(); }
 
 /* ---------- events ---------- */
+/* məhsula uzun basanda say seçimi */
+function tableQuick(id){ const t = tableById(id), tab = S.tabs[id]; if (!t || !tab || !tab.items?.length) return;
+  const cnt = tab.items.reduce((a, l) => a + l.qty, 0);
+  modal(`<h2>${esc(tab.label || t.name)}</h2><small>${tab.openedAt ? 'açılıb ' + hm(tab.openedAt) + ', ' + fmtDur(tab.openedAt) + ' əvvəl' : ''}${tab.by ? ', ' + esc(tab.by) : ''}</small>
+    ${tab.note ? `<div class="note">${esc(tab.note)}</div>` : ''}
+    <div style="margin-top:10px">${tab.items.map(l => `<div class="li" style="padding:9px 0"><div class="grow">${esc(l.name)} <b>× ${l.qty}</b></div><div class="amt">${money(l.price * l.qty)}</div></div>`).join('')}</div>
+    <div class="row" style="justify-content:space-between;margin-top:10px"><span class="muted">${cnt} ədəd</span><b style="font-size:24px">${money(tabTotal(tab))}</b></div>
+    <div class="acts"><button class="btn" data-act="tqOpen" data-id="${id}">Menyuya keç</button><button class="btn pri" data-act="tqPay" data-id="${id}">Hesabı bağla</button></div>`); }
+let lpT = 0, lpFired = false;
+const lpStop = () => { clearTimeout(lpT); };
+document.addEventListener('pointerdown', e => { lpFired = false; const tl = e.target.closest('.tile.busy[data-act=openT]:not(.ownt)');
+  if (tl) { clearTimeout(lpT); lpT = setTimeout(() => { lpFired = true; buzz(25); tableQuick(tl.dataset.id); }, 450); return; }
+  const b = e.target.closest('.pbtn[data-act=addItem]'); if (!b || e.target.closest('.mn')) return; clearTimeout(lpT);
+  lpT = setTimeout(() => { const p = prodById(b.dataset.id); if (!p) return; lpFired = true; buzz(25);
+    modal(`<h2>${esc(p.name)}</h2><p class="muted">Neçə ədəd əlavə edilsin?</p><div class="chips wrap" style="margin:8px 0 14px">${[2,3,4,5,6,8,10,12].map(n => `<button class="chip" data-act="addN" data-id="${p.id}" data-n="${n}" style="min-width:56px">${n}</button>`).join('')}</div><button class="btn" style="width:100%" data-act="mClose">Bağla</button>`); }, 450); });
+['pointerup', 'pointercancel', 'pointerleave', 'scroll'].forEach(ev => document.addEventListener(ev, lpStop, true));
+document.addEventListener('contextmenu', e => { if (e.target.closest('.pbtn, .tile')) e.preventDefault(); });
+document.addEventListener('click', e => { if (lpFired) { lpFired = false; e.stopPropagation(); e.preventDefault(); } }, true);
 document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el || el.disabled) return; const f = ACT[el.dataset.act]; if (f) f(el, e); });
 document.addEventListener('input', e => { const el = e.target, k = el.dataset.inp;
   if (k === 'q') { S.q = el.value; render(); }
@@ -2251,7 +2392,7 @@ document.addEventListener('change', e => { const el = e.target;
   if (el.id === 'ciMenu') { const w = $('#ciCatW'); if (w) w.style.display = el.checked ? '' : 'none'; return; }
   if (el.id === 'restoreFile') { if (el.files && el.files[0]) doRestore(el.files[0]); return; }
   if (S.draft && el.dataset.dc) { S.draft[el.dataset.dc] = el.checked; return; }
-  if (el.dataset.chg !== 'perd') return; const key = el.dataset.key; S[key + 'P'][el.dataset.f] = el.value; reloadKey(key); });
+  if (el.dataset.chg !== 'perd') return; const key = el.dataset.key, P = S[key + 'P']; if (el.dataset.f === 'one') { P.from = P.to = el.value; P.mode = 'one'; } else P[el.dataset.f] = el.value; reloadKey(key); });
 document.addEventListener('keydown', e => {
   if (document.body.dataset.view === 'lock' && S.me === null && ready() && S.staff.some(u => u.role === 'admin' && u.pin) && !e.target.closest('input')) {
     if (/^\d$/.test(e.key)) { ACT.pin({ dataset: { k: e.key } }); return; } if (e.key === 'Backspace') { ACT.pin({ dataset: { k: 'del' } }); return; } }
@@ -2286,8 +2427,8 @@ draw();
   try { if (window.claude && claude.use) S.dl = await claude.use('downloads'); } catch(e){}
   render();
 })();
-window.addEventListener('offline', () => toast('İnternet yoxdur. Proqram işləyir, qeydlər internet gələndə göndəriləcək.'));
-window.addEventListener('online', () => toast('İnternet bərpa olundu, qeydlər göndərilir.'));
+window.addEventListener('offline', () => { render(); toast('İnternet yoxdur. Proqram işləyir, qeydlər internet gələndə göndəriləcək.'); });
+window.addEventListener('online', () => { render(); toast('İnternet bərpa olundu, qeydlər göndərilir.'); });
 setInterval(() => { if (dayStr() !== S.today) watchDay(); if (S.view === 'tables' && !$('#modal').innerHTML) render(); }, 30000);
 </script>
 </body>
