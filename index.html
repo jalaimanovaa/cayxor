@@ -97,6 +97,10 @@ body[data-view="tab"] #nav{display:none}
 .stack>*+*{margin-top:14px}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
+.chips.wrap{flex-wrap:wrap;overflow:visible;gap:6px}
+.chips.wrap .chip{padding:6px 11px!important;font-size:15px!important;min-height:36px!important}
+.pbtn .mn{position:absolute;right:6px;bottom:6px;width:36px;height:36px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);color:var(--ink);font-size:22px;line-height:34px;text-align:center;font-weight:600}
+.paybar .tot{background:var(--surface2)!important;border:1px solid var(--line)!important;border-radius:14px!important;padding:8px 14px!important;min-height:54px}
 .chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:15px;white-space:nowrap;min-height:38px}
 .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .muted{color:var(--muted)}
@@ -796,7 +800,7 @@ function topBar(){
       return `<button class="btn ghost sm" data-act="back" aria-label="Masalara qayıt">‹<span class="bl"> Masalar</span></button>
       ${(lb => t && !t.own ? `<button class="ttl" data-act="tabLabel"><h1>${esc(lb || t.name)}<span class="pen">✎</span><span class="sub">${lb ? esc(t.name) + (t.zone ? ', ' + esc(t.zone) : '') : t.zone ? esc(t.zone) : 'Ad vermək üçün basın'}</span></h1></button>`
         : `<h1>${esc(t ? t.name : '')}</h1>`)(S.tabs[S.open] && S.tabs[S.open].label)}
-      <button class="btn sm" data-act="moveTab">Köçür</button><button class="btn sm" data-act="tabMenu" aria-label="Digər">•••</button>`; }
+      <button class="btn sm" data-act="moveTab">Masanı köçür</button><button class="btn sm" data-act="tabMenu" aria-label="Digər">•••</button>`; }
     case 'tables': return (isAdmin() ? `<button class="ttl" data-act="settings"><h1>${esc(S.settings.name)}<span class="pen">✎</span><span class="sub">Bu gün ${money(tt)}, ${tc.length} çek</span></h1></button>
       ${S.tables.length ? `<button class="btn sm ${S.edit ? 'pri' : ''}" data-act="toggleEdit">${S.edit ? 'Hazırdır' : 'Düzəlt'}</button>` : ''}` : `<h1>${esc(S.settings.name)}</h1>`) + meChip();
     case 'nisye': return `<h1>Nisyə dəftəri</h1><button class="btn pri sm" data-act="ledForm" data-k="m">+ Müştəri</button>` + (isAdmin() ? '' : meChip());
@@ -893,14 +897,14 @@ function vTab(){
   const cats = [...new Set(S.products.map(p => p.cat || 'Digər'))];
   if (S.cat && !cats.includes(S.cat)) S.cat = '';
   const q = S.q.trim().toLowerCase();
-  const prods = S.products.filter(p => (!S.cat || (p.cat || 'Digər') === S.cat) && (!q || p.name.toLowerCase().includes(q)));
+  const prods = S.products.map((p, i) => [p, i]).filter(([p]) => (!S.cat || (p.cat || 'Digər') === S.cat) && (!q || p.name.toLowerCase().includes(q))).sort((a, b) => (S.pop[b[0].id] || 0) - (S.pop[a[0].id] || 0) || a[1] - b[1]).map(x => x[0]);
   const inTab = {}; tab.items.forEach(l => inTab[l.pid] = (inTab[l.pid] || 0) + l.qty);
   let left = `<div class="left"><input id="q" type="search" placeholder="Məhsul axtar" value="${esc(S.q)}" data-inp="q" autocomplete="off">
-    <div class="chips" style="margin-top:10px">${['', ...cats].map(c => `<button class="chip ${S.cat === c ? 'on' : ''}" data-act="cat" data-c="${esc(c)}">${c ? esc(c) : 'Hamısı'}</button>`).join('')}</div>`;
+    <div class="chips wrap" style="margin-top:10px">${['', ...cats].map(c => `<button class="chip ${S.cat === c ? 'on' : ''}" data-act="cat" data-c="${esc(c)}">${c ? esc(c) : 'Hamısı'}</button>`).join('')}</div>`;
   if (!S.products.length) left += `<div class="pgrid"><button class="pbtn pnew" data-act="customItem"><span class="n">+ Menyuda olmayan məhsul</span><span class="p">ad və qiymət yazın</span></button></div><div class="card empty" style="margin-top:12px"><h2>Menyu boşdur</h2><p>Əvvəlcə məhsulları əlavə edin.</p>${isAdmin() ? '<button class="btn pri" data-act="go" data-v="products">Menyuya keç</button>' : ''}</div>`;
   else { const pb = p => { const out = p.track && (p.stock || 0) <= 0;
-      return `<button class="pbtn ${out ? 'out' : ''}" data-act="addItem" data-id="${p.id}"><span class="n">${esc(p.name)}</span><span class="p">${money(p.price)}</span>${inTab[p.id] ? `<span class="q">${inTab[p.id]}</span>` : ''}</button>`; };
-    const showTop = !S.cat && !q, top = showTop ? prods.filter(p => (S.pop[p.id] || 0) > 0).sort((a, b) => S.pop[b.id] - S.pop[a.id]).slice(0, 8) : [], topIds = new Set(top.map(p => p.id));
+      return `<button class="pbtn ${out ? 'out' : ''}" data-act="addItem" data-id="${p.id}"><span class="n">${esc(p.name)}</span><span class="p">${money(p.price)}</span>${inTab[p.id] ? `<span class="q">${inTab[p.id]}</span><span class="mn" data-act="subItem" data-id="${p.id}" aria-label="Azalt">−</span>` : ''}</button>`; };
+    const showTop = !S.cat && !q, top = showTop ? prods.filter(p => (S.pop[p.id] || 0) > 0).slice(0, 10) : [], topIds = new Set(top.map(p => p.id));
     left += '<div class="pgrid">' + (top.length ? '<div class="pgh">⭐ Ən çox satılanlar</div>' + top.map(pb).join('') + '<div class="pgh">Bütün menyu</div>' : '') +
       prods.filter(p => !topIds.has(p.id)).map(pb).join('') + `<button class="pbtn pnew" data-act="customItem"><span class="n">+ Menyuda olmayan məhsul</span><span class="p">${S.q.trim() && !prods.length ? '“' + esc(S.q.trim()) + '” əlavə et' : 'ad və qiymət yazın'}</span></button>` + '</div>'; }
   left += '</div>';
@@ -912,12 +916,13 @@ function vTab(){
   right += tab.items.map((l, i) => `<div class="line"><div class="ln">${esc(l.name)}</div><div class="lt">${money(l.price * l.qty)}</div>
     <div class="qty"><button data-act="qty" data-i="${i}" data-d="-1" aria-label="Azalt">−</button><span>${l.qty}</span><button data-act="qty" data-i="${i}" data-d="1" aria-label="Artır">+</button></div>
     <div class="lt"><small>${money(l.price)} ədədi</small></div></div>`).join('');
+  if (tab.items.length) right += '<button class="btn warn" style="width:100%;margin-top:14px" data-act="clearTab">Hamısını sil</button>';
   right += '</div>';
   const cnt = tab.items.reduce((a, l) => a + l.qty, 0);
   return `<div class="seg mobseg" style="margin-top:12px"><button class="${S.pane !== 'order' ? 'on' : ''}" data-act="pane" data-p="menu">Menyu</button><button class="${S.pane === 'order' ? 'on' : ''}" data-act="pane" data-p="order">Sifariş${cnt ? ' (' + cnt + ')' : ''}</button></div>
     ${t.own ? '<div class="note" style="margin-top:12px">Bizim masa: burada yazılanlar satış sayılmır. Anbardan çıxılır və hesabatda ayrıca göstərilir.</div>' : ''}
     <div class="tabwrap pane-${S.pane === 'order' ? 'order' : 'menu'}">${left}${right}</div>
-    <div class="paybar"><div class="in"><button class="tot" data-act="pane" data-p="order"><small>${cnt ? cnt + ' ədəd, sifarişə bax' : 'Cəmi'}</small><b>${money(tabTotal(tab))}</b></button>
+    <div class="paybar"><div class="in"><button class="tot" data-act="pane" data-p="order"><small>${cnt ? cnt + ' ədəd, sifarişə bax ›' : 'Cəmi'}</small><b>${money(tabTotal(tab))}</b></button>
     <button class="btn pri" data-act="${t.own ? 'ownClose' : 'closeTab'}" ${tab.items.length ? '' : 'disabled'}>${t.own ? 'Özümüzə yaz' : 'Hesabı bağla'}</button></div></div>`;
 }
 /* masa sifarişi hadisələr kimi saxlanılır: hər vurma ayrıca qeyddir, iki telefon eyni anda vursa da itmir */
@@ -1282,7 +1287,7 @@ const HELP = [
  ['🪑 Masalar', `<ol><li>Masaya basın, sifariş ekranı açılır.</li>
   <li><b>Müvəqqəti ad</b> (məs. müştərinin adı): masanı açın, yuxarıda adına (✎) basın. Hesab bağlananda ad silinir, masa öz adına qayıdır. Çekdə isə bu ad qalır.</li>
   <li><b>Masa əlavə etmək, daimi ad, zona, sıra:</b> Masalar ekranında "Düzəlt" basın.</li>
-  <li><b>Köçürmək:</b> masanın içində "Köçür" → yeni masanı seçin.</li>
+  <li><b>Köçürmək:</b> masanın içində "Masanı köçür" → yeni masanı seçin.</li>
   <li><b>Ödənişsiz boşaltmaq:</b> masanın içində ⋯ → "Boşalt". Jurnala yazılır.</li></ol>
   <p><b>Bizim masa:</b> özünüz üçün götürdüyünüz mallar. Satış sayılmır, amma anbardan çıxılır.</p>`],
  ['🧾 Sifariş vermək', `<ol><li>Məhsul düyməsinə hər basış = 1 ədəd. Tez-tez basmaq olar, ekran yaxınlaşmır.</li>
@@ -1576,7 +1581,7 @@ async function doReset(k, wipeSettings, rg){
 
 /* ---------- modal ---------- */
 function modal(html){ $('#modal').innerHTML = `<div class="ov" data-act="ovClose"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
-  const f = $('#modal input:not([type=hidden]):not([type=checkbox])'); if (f) setTimeout(() => { f.focus(); try { f.select(); } catch(e){} }, 30); }
+  /* pəncərə açılanda klaviatura özü çıxmasın: xanaya özünüz vurun */ }
 function modalUpd(html){ const sh = $('#modal .sheet'); if (!sh) return modal(html); const st = sh.scrollTop; sh.innerHTML = html; sh.scrollTop = st; }
 const closeModal = () => { $('#modal').innerHTML = ''; S.draft = null; };
 function confirmBox(text, ok, fn){ modal(`<h2>${esc(text)}</h2><div class="acts"><button class="btn" data-act="mClose">Ləğv et</button><button class="btn warn" data-act="mOk">${esc(ok)}</button></div>`); confirmBox.fn = fn; }
@@ -1738,7 +1743,7 @@ const ACT = {
       <label class="check"><input type="checkbox" id="ciMenu"> Menyuya da əlavə et (növbəti dəfə düymə kimi çıxsın)</label>
       <div id="ciCatW" style="display:none"><label for="ciCat">Kateqoriya</label><input id="ciCat" list="ciCats" placeholder="Digər"><datalist id="ciCats">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist></div>
       <div class="acts"><button class="btn" data-act="mClose">Ləğv et</button><button class="btn pri" data-act="saveCustom">Sifarişə əlavə et</button></div>`);
-    setTimeout(() => { const n = $('#ciName'), pr = $('#ciPrice'); (n && n.value ? pr : n)?.focus(); }, 60); },
+  },
   ciQty: el => { S.ci.qty = Math.max(1, S.ci.qty + +el.dataset.d); $('#ciQ').textContent = S.ci.qty; },
   saveCustom: () => { const name = mv('ciName') || 'Digər məhsul', price = r2(num(mv('ciPrice'))), qty = (S.ci && S.ci.qty) || 1;
     if (!price) return toast('Qiyməti yazın');
@@ -1747,6 +1752,7 @@ const ACT = {
       if (ex) pid = ex.id; else { pid = uid(); S.products.push({ id: pid, kind: 'item', name, cat: mv('ciCat') || 'Digər', price, cost: 0, track: false, stock: 0, min: 0, parts: [], recipe: [] }); saveProducts(); } }
     tabEvent(S.open, [{ pid, name, price, d: qty }]); S.q = ''; closeModal(); render(); toast(name + (qty > 1 ? ' × ' + qty : '') + ' sifarişə əlavə edildi'); },
   addItem: el => { const p = prodById(el.dataset.id); if (!p) return; tabEvent(S.open, [{ pid: p.id, name: p.name, price: r2(p.price), d: 1 }]); },
+  subItem: el => { const tab = S.tabs[S.open]; const i = tab ? tab.items.findIndex(l => l.pid === el.dataset.id) : -1; if (i < 0) return; ACT.qty({ dataset: { i: String(i), d: '-1' } }); },
   qty: el => { const tab = S.tabs[S.open], l = tab && tab.items[+el.dataset.i], d = +el.dataset.d; if (!l) return;
     if (d < 0) { log(Date.now() - (l.at || 0) < 30000 ? 'tez' : 'azaltma', l.name + ' × 1', l.price, tableById(S.open)?.name);
       if (tab.items.length === 1 && l.qty === 1 && !tab.note && !tab.label) return Store.del('tabs/' + S.open); }
