@@ -799,7 +799,7 @@ function bootView(){ let sv = null; try { sv = JSON.parse(localStorage.getItem('
   if (!sv || !sv.v || sv.v === 'tables') return;
   if (sv.v === 'tab' && !(sv.open && tableById(sv.open))) return;
   if (sv.v === 'led' && !S.ledgers.some(l => l.id === sv.led)) return;
-  S.view = sv.v; S.open = sv.open || null; S.ledOpen = sv.led || null; S.ledKind = sv.lk || 'm'; if (sv.pane) S.pane = sv.pane; if (sv.bt) S.bTab = sv.bt;
+  S.view = sv.v; S.open = sv.open || null; S.ledOpen = sv.led || null; S.ledKind = sv.lk || 'm'; if (sv.pane) S.pane = sv.pane;
   setTimeout(() => viewLoad(sv.v), 0); }
 function saveView(){ try { localStorage.setItem('cayxor-view', JSON.stringify({ v: S.view, open: S.open, led: S.ledOpen, lk: S.ledKind, pane: S.pane, bt: S.bTab })); } catch(e){} }
 /* ---------- siyahılarda axtarış ---------- */
@@ -1798,7 +1798,7 @@ const ACT = {
     if (S.staff.some(u => u.id !== S.me.id && u.pin === pinHash(a, u.id))) return toast('Bu kod başqasındadır, başqa kod seçin');
     const u = staffById(S.me.id); u.pin = pinHash(a, u.id); saveStaff(); closeModal(); toast('Kod dəyişdi'); },
 
-  go: el => { const v = el.dataset.v; closeModal(); S.view = v; S.edit = false; window.scrollTo(0, 0);
+  go: el => { const v = el.dataset.v; closeModal(); if (v === 'buys') S.bTab = 'exp'; S.view = v; S.edit = false; window.scrollTo(0, 0);
     if (v === 'buys') loadBuys(); if (v === 'rep') { loadRep(); loadCmp(); } if (v === 'log') loadLogs(); if (v === 'shifts') loadShifts(); if (v === 'sales') loadSales(); if (v === 'staff') { S.stDay = dayStr(); loadStaff(); } render(); },
   back: () => { S.view = 'tables'; S.open = null; S.q = ''; render(); },
   toggleEdit: () => { S.edit = !S.edit; render(); },
