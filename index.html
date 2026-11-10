@@ -978,7 +978,7 @@ function vTab(){
     <div class="chips wrap" style="margin-top:10px">${['', ...cats].map(c => `<button class="chip ${S.cat === c ? 'on' : ''}" data-act="cat" data-c="${esc(c)}">${c ? `<i class="cd" style="background:${catColor(cats, c)}"></i>${esc(c)}` : 'Hamısı'}</button>`).join('')}</div>`;
   if (!S.products.length) left += `<div class="pgrid"><button class="pbtn pnew" data-act="customItem"><span class="n">+ Menyuda olmayan məhsul</span><span class="p">ad və qiymət yazın</span></button></div><div class="card empty" style="margin-top:12px"><h2>Menyu boşdur</h2><p>Əvvəlcə məhsulları əlavə edin.</p>${isAdmin() ? '<button class="btn pri" data-act="go" data-v="products">Menyuya keç</button>' : ''}</div>`;
   else { const pb = p => { const out = p.track && (p.stock || 0) <= 0;
-      return `<button class="pbtn ${out ? 'out' : ''}" style="border-left:5px solid ${catColor(cats, p.cat)}" data-act="addItem" data-id="${p.id}"><span class="n">${esc(p.name)}</span><span class="p">${money(p.price)}</span>${inTab[p.id] ? `<span class="q">${inTab[p.id]}</span><span class="mn" data-act="subItem" data-id="${p.id}" aria-label="Azalt">−</span>` : ''}</button>`; };
+      return `<button class="pbtn ${out ? 'out' : ''}" style="border-left:3px solid ${catColor(cats, p.cat)}" data-act="addItem" data-id="${p.id}"><span class="n">${esc(p.name)}</span><span class="p">${money(p.price)}</span>${inTab[p.id] ? `<span class="q">${inTab[p.id]}</span><span class="mn" data-act="subItem" data-id="${p.id}" aria-label="Azalt">−</span>` : ''}</button>`; };
     const showTop = !S.cat && !q, top = showTop ? prods.filter(p => (S.pop[p.id] || 0) > 0).slice(0, 10) : [], topIds = new Set(top.map(p => p.id));
     left += '<div class="pgrid">' + (top.length ? '<div class="pgh">⭐ Ən çox satılanlar</div>' + top.map(pb).join('') + '<div class="pgh">Bütün menyu</div>' : '') +
       prods.filter(p => !topIds.has(p.id)).map(pb).join('') + `<button class="pbtn pnew" data-act="customItem"><span class="n">+ Menyuda olmayan məhsul</span><span class="p">${S.q.trim() && !prods.length ? '“' + esc(S.q.trim()) + '” əlavə et' : 'ad və qiymət yazın'}</span></button>` + '</div>'; }
@@ -1137,7 +1137,7 @@ function vMore(){
   const ALL = { shiftAsk: ['Növbəni bağla','Hesabatı WhatsApp-a göndər'], sales: ['Satış cədvəli','Gün-gün satış, qrafik, ümumi hesabat'], shifts: ['Növbələr','Bağlanan və bağlanmayan bütün növbələr'], eodToday: ['Gün sonu','Bugünkü hesabat, təqvim günü üzrə'],
     products: ['Menyu və setlər','Qiymətlər, çay setləri, reseptlər'], stock: ['Anbar','Mallar, sayım, minimum'], staff: ['İşçilər','Davamiyyət, verilən pullar, kodlar'], sup: ['Tədarükçülər','Kimdən alırıq, borcumuz'],
     log: ['Ləğv jurnalı','Silinən və azaldılan sifarişlər'], settings: ['Parametrlər','Ad, aylıq hədəf, görünüş'], help: ['Təlimat','Proqramdan necə istifadə etməli'] };
-  const G = [['💰 Hesabat və kassa', ['shiftAsk','eodToday','sales','shifts']], ['🍵 Menyu və anbar', ['products','stock','sup']], ['👥 İşçilər', ['staff']], ['⚙️ Sistem', ['log','settings','help']]];
+  const G = [['💰 Hesabat və kassa', ['shiftAsk','eodToday','sales','shifts']], ['👥 İşçilər', ['staff']], ['🍵 Menyu və anbar', ['products','stock','sup']], ['⚙️ Sistem', ['log','settings','help']]];
   return G.map(([t, ks]) => `<h3 class="mgh">${t}</h3><div class="tiles">` + ks.map(k => `<button data-act="${['settings','eodToday','shiftAsk'].includes(k) ? k : 'go'}" data-v="${k}">${IC[k]}<b>${ALL[k][0]}</b><small>${ALL[k][1]}</small></button>`).join('') + '</div>').join(''); }
 
 /* ---------- menu ---------- */
