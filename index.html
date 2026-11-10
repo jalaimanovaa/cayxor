@@ -477,6 +477,7 @@ input,textarea,select{font-size:max(16px,1em)}
 .oldst .li .btn{margin-right:4px}
 
 /* ---- dizayn yeniləməsi ---- */
+.tile.gray{background:var(--surface2);border-color:var(--line)}
 .tile.busy.ok{background:var(--ok-bg);border-color:var(--green);color:var(--ok-ink)}
 .tile.busy.ok small{color:var(--ok-ink)}
 .tile.busy.ok .gl .glass{stroke:var(--green)}.tile.busy.ok .gl .tea{fill:var(--green)}
@@ -939,7 +940,7 @@ function vTables(){
   if (zones.length > 1) h += '<div class="chips" style="margin-top:14px">' + ['', ...zones].map(z =>
     `<button class="chip ${S.zone === z ? 'on' : ''}" data-act="zone" data-z="${esc(z)}">${z ? esc(z) : 'Hamısı'}</button>`).join('') + '</div>';
   h += `<div class="status"><span><span class="dot"></span>${busy} dolu</span><span class="muted"><span class="dot free"></span>${S.tables.length - busy} boş</span>
-    ${busy ? `<span class="lgd"><span><i class="g"></i>2s-dək</span><span><i class="o"></i>2–4s</span><span><i class="r"></i>4s+</span></span>` : ''}</div>`;
+    ${busy && S.settings.tileMode === 'time' ? `<span class="lgd"><span><i class="g"></i>2s-dək</span><span><i class="o"></i>2–4s</span><span><i class="r"></i>4s+</span></span>` : ''}</div>`;
   if (isAdmin() && !S.edit) { const tc0 = todayChecks(), debt = sum(S.ledgers.filter(l => l.kind === 'm').map(l => bal(l)).filter(b => b > 0), b => b);
     h = `<div class="dstrip"><div><small>Bu gün satış</small><b>${money(sum(tc0, x => x.total))}</b></div><div><small>Çek sayı</small><b>${tc0.length}</b></div><div><small>Açıq hesablar</small><b>${money(openSum)}</b></div>${debt > 0 ? `<div><small>Nisyə (ümumi)</small><b class="debt">${money(debt)}</b></div>` : ''}</div>` + h; }
   const edit = S.edit && isAdmin();
@@ -960,7 +961,7 @@ function tile(t, edit){
     <div class="ed"><button data-act="mvT" data-id="${t.id}" data-d="-1" aria-label="Əvvələ">‹</button><button data-act="mvT" data-id="${t.id}" data-d="1" aria-label="Sona">›</button>
     <button class="x" data-act="delTable" data-id="${t.id}">Sil</button></div></div>`;
   const cnt = busy ? tab.items.reduce((s, l) => s + l.qty, 0) : 0;
-  const ageH = busy && tab.openedAt ? (Date.now() - tab.openedAt) / 3600000 : 0, tone = !busy ? '' : ageH >= 4 ? 'late' : ageH >= 2 ? '' : 'ok';
+  const ageH = busy && tab.openedAt ? (Date.now() - tab.openedAt) / 3600000 : 0, tm = S.settings.tileMode === 'time', tone = !busy ? (tm ? '' : 'gray') : !tm ? '' : ageH >= 4 ? 'late' : ageH >= 2 ? '' : 'ok';
   return `<button class="tile ${busy ? 'busy' : ''} ${tone}" data-act="openT" data-id="${t.id}">${glass()}<span class="nm">${esc(tab && tab.label || t.name)}${tab && tab.label ? `<small class="orig">${esc(t.name)}</small>` : ''}</span>
     <span class="info">${busy ? `<b>${money(tabTotal(tab))}</b><small><span class="dur">${tab.openedAt ? fmtDur(tab.openedAt) : ''}</span>, ${cnt} ədəd${tab.by ? ', ' + esc(tab.by) : ''}</small>` : `<small>${esc(t.zone || 'Boş')}</small>`}</span></button>`;
 }
@@ -2249,6 +2250,8 @@ const ACT = {
       <label for="sTgC">Telegram Chat ID</label><div class="row" style="flex-wrap:nowrap"><input id="sTgC" value="${esc(S.settings.tgChat || '')}" placeholder="Məs: 123456789"><button class="btn sm" data-act="tgFind">Tap</button></div>
       <button class="btn ghost sm" style="margin-top:8px" data-act="tgTest">Telegram-a test mesajı göndər</button>
       <label for="sCm">CallMeBot açarı</label><input id="sCm" inputmode="numeric" value="${esc(S.settings.cm || '')}" placeholder="Məs: 3579882">
+      <label>Masaların rəngi</label><div class="seg" id="tmSeg">${[['simple','Sadə: açıq sarı, boş boz'],['time','Müddətə görə']].map(([k, l]) => `<button class="${(S.settings.tileMode === 'time' ? 'time' : 'simple') === k ? 'on' : ''}" data-act="tileMode" data-k="${k}">${l}</button>`).join('')}</div>
+      <p class="hint">"Müddətə görə": masa 2 saata qədər yaşıl, 2–4 saat sarı, 4 saatdan çox qırmızı görünür. İstədiyiniz vaxt dəyişə bilərsiniz.</p>
       <label>Görünüş</label><div class="seg">${[['','Avtomatik'],['light','Açıq'],['dark','Tünd']].map(([k, l]) => `<button class="${th === k ? 'on' : ''}" data-act="theme" data-t="${k}">${l}</button>`).join('')}</div>
       <div class="subttl">Ehtiyat nüsxə</div><p class="hint">Bütün məlumatları bir fayla yükləyin. Başqa cihaza və ya yeni versiyaya köçürəndə "Bərpa et" ilə geri yazın. Ayda bir dəfə yükləyib saxlamaq məsləhətdir.</p>
       <div class="row" style="margin-top:8px">${canSave() ? '<button class="btn" data-act="backup">Ehtiyat nüsxə yüklə</button>' : ''}<button class="btn" data-act="restore">Bərpa et</button></div>
@@ -2307,6 +2310,7 @@ const ACT = {
     firebase.auth().signInWithEmailAndPassword(em, pw).catch(e => { const c = e && e.code;
       S.authErr = c === 'auth/too-many-requests' ? 'Çox cəhd edildi, bir az gözləyin.' : c === 'auth/network-request-failed' ? 'İnternet yoxdur.' : c === 'auth/invalid-email' ? 'E-poçt düzgün yazılmayıb.' : c && c.includes('api-key') ? 'Firebase açarı (apiKey) səhvdir. Claude-a yazın.' : 'E-poçt və ya parol səhvdir.';
       S.authBusy = false; render(); }); },
+  tileMode: el => { S.settings = { ...S.settings, tileMode: el.dataset.k }; Store.merge('cfg/settings', { tileMode: el.dataset.k }); document.querySelectorAll('#tmSeg button').forEach(b => b.classList.toggle('on', b === el)); render(); },
   theme: el => { const t = el.dataset.t; if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
     try { localStorage.setItem('cayxana-theme', t); } catch(e){} document.querySelectorAll('#modal .seg button').forEach(b => b.classList.toggle('on', b === el)); },
   saveSet: () => { let wa = mv('sWa').replace(/\D/g, ''); if (/^0\d{9}$/.test(wa)) wa = '994' + wa.slice(1); if (/^\d{9}$/.test(wa)) wa = '994' + wa;
